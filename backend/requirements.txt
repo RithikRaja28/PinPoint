@@ -4,8 +4,8 @@ Flask-Migrate
 Flask-JWT-Extended
 Flask-Cors
 psycopg2-binary
+python-dotenv
 geoalchemy2
 requests
 playwright 
-
-
+shapely
