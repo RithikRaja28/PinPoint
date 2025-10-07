@@ -3,8 +3,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:pinpoint/services/map_picker_screen.dart';
-
-enum UserType { business, customer }
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:pinpoint/globals.dart';
+import 'package:pinpoint/user_model.dart';
+import 'package:flutter/services.dart';
 
 enum AuthMode { login, signup }
 
@@ -30,6 +33,10 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   final _otpController = TextEditingController();
   final _shopNameController = TextEditingController();
   final _shopContactController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _districtController = TextEditingController();
+  final _descriptionController = TextEditingController();
   LatLng? _shopLocation;
 
   bool _otpSent = false;
@@ -235,19 +242,21 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       await showStepDialog(step: steps[i], stepIndex: i);
     }
 
-    // Done, go to dashboard
     Navigator.pushReplacementNamed(context, '/dashboard');
   }
 
   void _toggleAuthMode() {
     setState(() {
-      _authMode = _authMode == AuthMode.login ? AuthMode.signup : AuthMode.login;
+      _authMode = _authMode == AuthMode.login
+          ? AuthMode.signup
+          : AuthMode.login;
     });
   }
 
   @override
   void initState() {
     super.initState();
+    _checkLoginStatus();
     _gradientController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
@@ -256,6 +265,29 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return; // no user logged in → stay on login page
+
+    // Fetch user details from Firestore
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    if (!doc.exists) return;
+
+    final userData = doc.data();
+    if (userData == null) return;
+
+    // Determine navigation route
+    final userType = userData['userType'];
+    if (userType == 'business') {
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    } else {
+      Navigator.pushReplacementNamed(context, '/colab_request');
+    }
   }
 
   @override
@@ -277,30 +309,30 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   void _showSnack(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
-  void _sendOtp() {
-    if (_phoneController.text.trim().length < 10) {
-      _showSnack("Enter a valid number");
-      return;
-    }
-    setState(() => _loading = true);
-    Future.delayed(const Duration(seconds: 2), () {
-      setState(() {
-        _loading = false;
-        _otpSent = true;
-        _generatedOtp = "1234";
-      });
-      _showSnack("OTP sent: $_generatedOtp (demo)");
-    });
-  }
+  // void _sendOtp() {
+  //   if (_phoneController.text.trim().length < 10) {
+  //     _showSnack("Enter a valid number");
+  //     return;
+  //   }
+  //   setState(() => _loading = true);
+  //   Future.delayed(const Duration(seconds: 2), () {
+  //     setState(() {
+  //       _loading = false;
+  //       _otpSent = true;
+  //       _generatedOtp = "1234";
+  //     });
+  //     _showSnack("OTP sent: $_generatedOtp (demo)");
+  //   });
+  // }
 
-  void _verifyOtp() {
-    if (_otpController.text.trim() == _generatedOtp) {
-      _showSnack("OTP verified!");
-      Navigator.pushReplacementNamed(context, '/dashboard');
-    } else {
-      _showSnack("Invalid OTP");
-    }
-  }
+  // void _verifyOtp() {
+  //   if (_otpController.text.trim() == _generatedOtp) {
+  //     _showSnack("OTP verified!");
+  //     Navigator.pushReplacementNamed(context, '/dashboard');
+  //   } else {
+  //     _showSnack("Invalid OTP");
+  //   }
+  // }
 
   Future<void> _pickShopLocation() async {
     final LatLng? result = await Navigator.push(
@@ -315,13 +347,90 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
   Future<void> _submitSignup() async {
     if (!_formKey.currentState!.validate()) return;
+
     if (_selectedUserType == UserType.business && _shopLocation == null) {
       _showSnack("Select shop location");
       return;
     }
-   _showSnack("Signup successful for ${_selectedUserType.name}");
-    await Future.delayed(const Duration(milliseconds: 300)); // small delay for UX
-_showConsentDialogs();
+
+    try {
+      _showSnack("Creating account...");
+
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
+
+      final uid = userCredential.user!.uid;
+
+      final userModel = UserModel(
+        uid: uid,
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        city: _cityController.text.trim(),
+        district: _districtController.text.trim(),
+        userType: _selectedUserType,
+        shopName: _selectedUserType == UserType.business
+            ? _shopNameController.text.trim()
+            : null,
+        shopContact: _selectedUserType == UserType.business
+            ? _shopContactController.text.trim()
+            : null,
+        address: _addressController.text.trim(),
+        description: _descriptionController.text.trim(),
+        shopLat: _selectedUserType == UserType.business
+            ? _shopLocation?.latitude ?? 20.5937
+            : null,
+        shopLng: _selectedUserType == UserType.business
+            ? _shopLocation?.longitude ?? 78.9629
+            : null,
+      );
+      currentUser = userModel;
+      print(_selectedUserType);
+      print("\n");
+      final collectionName = _selectedUserType == UserType.business
+          ? 'stores'
+          : 'users';
+
+      print("${collectionName} jjjjjjj");
+      await FirebaseFirestore.instance
+          .collection(collectionName)
+          .doc(uid)
+          .set(userModel.toMap());
+
+      await FirebaseFirestore.instance.collection("collabs").doc(uid).set({
+        'shops': [],
+      });
+
+      await FirebaseFirestore.instance
+          .collection("cities")
+          .doc(_cityController.text.trim())
+          .set({
+            'shops': FieldValue.arrayUnion([uid]),
+          }, SetOptions(merge: true));
+
+      _showSnack("Signup successful for ${_selectedUserType.name}");
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (_selectedUserType == UserType.business) {
+        _showConsentDialogs();
+      } else {
+        Navigator.pushReplacementNamed(context, '/customer');
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = "Signup failed. Please try again.";
+      if (e.code == 'email-already-in-use') {
+        message = "This email is already registered.";
+      } else if (e.code == 'weak-password') {
+        message = "Your password is too weak.";
+      } else if (e.code == 'invalid-email') {
+        message = "Invalid email format.";
+      }
+      _showSnack(message);
+    } catch (e) {
+      _showSnack("Something went wrong: $e");
+    }
   }
 
   // helper widgets
@@ -512,7 +621,6 @@ _showConsentDialogs();
       },
     );
   }
-
 
   // Tab row with animated underline
   Widget _buildModeTabs() {
@@ -732,7 +840,7 @@ _showConsentDialogs();
         children: [
           _typeChip("Business", UserType.business),
           const SizedBox(width: 8),
-          _typeChip("Customer", UserType.customer),
+          _typeChip("Customer", UserType.normal),
         ],
       ),
     );
@@ -742,7 +850,12 @@ _showConsentDialogs();
     final selected = _selectedUserType == type;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _selectedUserType = type),
+        onTap: () {
+          setState(() {
+            _selectedUserType = type;
+            print(_selectedUserType); // optional for debug
+          });
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 320),
           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -776,60 +889,151 @@ _showConsentDialogs();
     );
   }
 
-  // login / signup card content
   Widget _loginCard() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 12),
-        Text(
-          "Welcome back",
-          style: TextStyle(
-            fontSize: 20,
-            color: Colors.grey[900],
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          "Sign in using your phone number",
-          style: TextStyle(color: Colors.grey[700]),
-        ),
-        const SizedBox(height: 18),
-        _buildInput(
-          controller: _phoneController,
-          label: "Mobile Number",
-          keyboard: TextInputType.phone,
-        ),
-        const SizedBox(height: 12),
-        if (_otpSent)
-          _buildInput(
-            controller: _otpController,
-            label: "Enter OTP",
-            keyboard: TextInputType.number,
-          ),
-        const SizedBox(height: 16),
-        _primaryButton(
-          label: _otpSent ? "Verify OTP" : "Send OTP",
-          onPressed: _loading ? null : (_otpSent ? _verifyOtp : _sendOtp),
-        ),
-        const SizedBox(height: 12),
-        Center(
-          child: TextButton(
-            onPressed: () {
-              setState(() {
-                _authMode = AuthMode.signup;
-                _tabsController.forward();
-              });
-            },
-            child: const Text(
-              "Create an account",
-              style: TextStyle(fontWeight: FontWeight.w600),
+    return Form(
+      key: loginFormKey, // use the global key here
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 12),
+          Text(
+            "Welcome back",
+            style: TextStyle(
+              fontSize: 20,
+              color: Colors.grey[900],
+              fontWeight: FontWeight.w800,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            "Sign in using your email and password",
+            style: TextStyle(color: Colors.grey[700]),
+          ),
+          const SizedBox(height: 18),
+
+          _buildInput(
+            controller: _emailController,
+            label: "Email",
+            keyboard: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 12),
+
+          _buildInput(
+            controller: _passwordController,
+            label: "Password",
+            obscure: true,
+          ),
+          const SizedBox(height: 16),
+
+          _primaryButton(
+            label: "Sign In",
+            onPressed: _loading ? null : _signInWithEmailPassword,
+          ),
+
+          const SizedBox(height: 12),
+          Center(
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  _authMode = AuthMode.signup;
+                  _tabsController.forward();
+                });
+              },
+              child: const Text(
+                "Create an account",
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<void> _signInWithEmailPassword() async {
+    if (!loginFormKey.currentState!.validate()) return;
+
+    setState(() => _loading = true);
+
+    try {
+      // 1️⃣ Sign in with Firebase Authentication
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
+
+      final uid = userCredential.user!.uid;
+
+      // 2️⃣ Try to fetch user from "users" collection first
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      String collectionUsed = 'users';
+
+      // 3️⃣ If not found in "users", check "stores"
+      if (!userDoc.exists) {
+        userDoc = await FirebaseFirestore.instance
+            .collection('stores')
+            .doc(uid)
+            .get();
+        collectionUsed = 'stores';
+      }
+
+      // 4️⃣ Initialize UserModel exactly like signup
+      if (userDoc.exists) {
+        final userData = userDoc.data()! as Map<String, dynamic>;
+
+        currentUser = UserModel(
+          uid: userData['uid'],
+          name: userData['name'],
+          email: userData['email'],
+          phone: userData['phone'],
+          userType: userData['userType'] == 'business'
+              ? UserType.business
+              : UserType.normal,
+          shopName: userData['shopName'],
+          shopContact: userData['shopContact'],
+          shopLat: userData['shopLocation']?['lat']?.toDouble(),
+          shopLng: userData['shopLocation']?['lng']?.toDouble(),
+          createdAt: userData['createdAt'],
+          city: userData['city'],
+          district: userData['district'],
+          description: userData['description'],
+          address: userData['address'],
+        );
+
+        // ✅ Optional: Store globally for app session
+        // Globals.currentUser = currentUser;
+
+        _showSnack("Welcome back, ${currentUser?.name}!");
+        print(
+          "Logged in user type: ${currentUser?.userType}, collection: $collectionUsed",
+        );
+
+        if (_selectedUserType == UserType.business) {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        } else {
+          Navigator.pushReplacementNamed(context, '/customer');
+        }
+      } else {
+        _showSnack("User record not found.");
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = "Login failed. Please try again.";
+      if (e.code == 'user-not-found') {
+        message = "No account found with this email.";
+      } else if (e.code == 'wrong-password') {
+        message = "Incorrect password.";
+      }
+      _showSnack(message);
+    } catch (e) {
+      _showSnack("Something went wrong: $e");
+    } finally {
+      setState(() => _loading = false);
+    }
   }
 
   Widget _signupCard() {
@@ -862,6 +1066,15 @@ _showConsentDialogs();
             label: "Mobile number",
             keyboard: TextInputType.phone,
           ),
+          _buildInput(
+            controller: _cityController,
+            label: "City (in lowercase without space)",
+          ),
+          const SizedBox(height: 12),
+          _buildInput(
+            controller: _districtController,
+            label: "District (in lowercase without space)",
+          ),
           const SizedBox(height: 12),
           _buildInput(
             controller: _passwordController,
@@ -875,6 +1088,14 @@ _showConsentDialogs();
             _buildInput(
               controller: _shopContactController,
               label: "Shop contact",
+            ),
+            const SizedBox(height: 12),
+            const SizedBox(height: 12),
+            _buildInput(controller: _addressController, label: "Full Address"),
+            const SizedBox(height: 12),
+            _buildInput(
+              controller: _descriptionController,
+              label: "Description",
             ),
             const SizedBox(height: 12),
             // shop location with animated state
@@ -943,6 +1164,14 @@ _showConsentDialogs();
     } else {
       _tabsController.forward();
     }
+
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: const Color(0xFF6A00F8), // your blue/purple shade
+        statusBarIconBrightness: Brightness.light, // for light icons on dark bg
+        // statusBarBrightness: Brightness.dark, // for iOS devices
+      ),
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7FB),
