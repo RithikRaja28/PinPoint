@@ -6,3 +6,6 @@ Flask-Cors
 psycopg2-binary
 geoalchemy2
 requests
+playwright 
+
+
