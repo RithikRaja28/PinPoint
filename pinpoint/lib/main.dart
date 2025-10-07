@@ -1,5 +1,22 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:pinpoint/screens/collob_request_store.dart';
+import 'package:pinpoint/screens/colob_request_list.dart';
+import 'package:pinpoint/screens/create_campaign_screen.dart';
+import 'package:pinpoint/screens/customer_screen.dart';
+import 'package:pinpoint/screens/dashboard_screen.dart';
+import 'package:pinpoint/screens/auth_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:pinpoint/services/phone_auth_service.dart';
+import 'package:pinpoint/globals.dart';
+
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+
+//   // Then initialize Firebase
+//   await Firebase.initializeApp();
+
+//   runApp(const CampaignApp());
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async';
 import 'dart:ui';
@@ -15,6 +32,7 @@ import 'package:pinpoint/screens/create_post_screen.dart';
 
 Future<void> main() async {
   // Load environment variables
+  // Load environment variables from .env file
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
@@ -102,8 +120,11 @@ class CampaignApp extends StatelessWidget {
         // 🗣️ Community & Social Feedback Routes
         '/community': (ctx) => const CommunityFeedScreen(),
         '/create_post': (ctx) => const CreatePostScreen(),
+        '/phone_auth': (ctx) => PhoneAuthPage(),
+        '/customer': (ctx) => CustomerPage(),
+        '/colab_request': (ctx) => ColobRequestList(),
       },
-      initialRoute: '/',
+      initialRoute: '/colab_request',
     );
   }
 }

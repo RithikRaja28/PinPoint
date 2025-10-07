@@ -1,8 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:translator/translator.dart';
+import 'package:pinpoint/user_model.dart';
 
 String selectedLang = 'en';
 final globalTranslator = GoogleTranslator();
+UserModel? currentUser;
+final GlobalKey<FormState> signupFormKey = GlobalKey<FormState>();
+final GlobalKey<FormState> loginFormKey = GlobalKey<FormState>();
 
+// Navigator.pushReplacementNamed(context, '/dashboard');
 
 //  FutureBuilder<String>(
 //               future: translator
@@ -31,7 +37,3 @@ final globalTranslator = GoogleTranslator();
 //                 );
 //               },
 //             ),
-
-
-
-
