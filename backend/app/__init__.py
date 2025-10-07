@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from .db import db
 from config import Config
+from .routes.geofence import geofence_bp
 
 
 def create_app():
@@ -20,6 +21,7 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(shops_bp, url_prefix='/api/shops')
     app.register_blueprint(campaigns_bp, url_prefix='/api/campaigns')
+    app.register_blueprint(geofence_bp, url_prefix="/api/geofence")
 
     with app.app_context():
         from .models import User, Shop, Campaign
