@@ -105,8 +105,6 @@ class CampaignApp extends StatelessWidget {
         '/': (ctx) => const AuthScreen(),
         '/create_campaign': (ctx) => const CreateCampaignScreen(),
         '/dashboard': (ctx) => const DashboardScreen(),
-
-        // 🗣️ Community & Social Feedback Routes
         '/community': (ctx) => const CommunityFeedScreen(),
         '/create_post': (ctx) => const CreatePostScreen(),
         '/phone_auth': (ctx) => PhoneAuthPage(),

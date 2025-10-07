@@ -966,21 +966,15 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       final uid = userCredential.user!.uid;
 
       // 2️⃣ Try to fetch user from "users" collection first
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
+      final String collectionUsed = _selectedUserType == UserType.business
+          ? 'stores'
+          : 'users';
+
+      // Fetch the document only from the relevant collection
+      final DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection(collectionUsed)
           .doc(uid)
           .get();
-
-      String collectionUsed = 'users';
-
-      // 3️⃣ If not found in "users", check "stores"
-      if (!userDoc.exists) {
-        userDoc = await FirebaseFirestore.instance
-            .collection('stores')
-            .doc(uid)
-            .get();
-        collectionUsed = 'stores';
-      }
 
       // 4️⃣ Initialize UserModel exactly like signup
       if (userDoc.exists) {
@@ -1019,7 +1013,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           Navigator.pushReplacementNamed(context, '/customer');
         }
       } else {
-        _showSnack("User record not found.");
+        _showSnack("User not found, check the Usertype.");
       }
     } on FirebaseAuthException catch (e) {
       String message = "Login failed. Please try again.";

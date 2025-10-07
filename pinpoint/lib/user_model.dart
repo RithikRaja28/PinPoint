@@ -16,8 +16,8 @@ class UserModel {
   final Timestamp? createdAt;
   final String? address;
   final String? description;
-  final String? city; // Added to constructor/mapping
-  final String? district; // Added to constructor/mapping
+  final String? city;
+  final String? district;
 
   UserModel({
     required this.uid,
