@@ -27,7 +27,6 @@ import 'package:pinpoint/screens/create_post_screen.dart';
 
 Future<void> main() async {
   // Load environment variables from .env file
-  try {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
@@ -55,7 +54,7 @@ Future<void> main() async {
   debugDefaultTargetPlatformOverride = TargetPlatform.android;
 
   runApp(const CampaignApp());
-}}
+}
 
 class CampaignApp extends StatelessWidget {
   const CampaignApp({super.key});
