@@ -12,12 +12,7 @@ CORS(
     methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]  # ✅ full set of methods
 )
 # Register blueprints
-app.register_blueprint(auth, url_prefix="/api/auth")
-app.register_blueprint(alerts_bp, url_prefix="/api")
-app.register_blueprint(responses_bp, url_prefix="/api")
-app.register_blueprint(appeals_bp, url_prefix="/api")
-app.register_blueprint(proxy_bp, url_prefix="/")  # ✅ mount proxy routes
-app.register_blueprint(payload_bp, url_prefix="/api/payloads") 
+app.register_blueprint(poster, url_prefix="/api")
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
