@@ -10,6 +10,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @campaign_bp.route("/", methods=["POST"])
 def create_campaign():
+    print("Request got!!!!")
     try:
         title = request.form.get("title")
         offer = request.form.get("offer")

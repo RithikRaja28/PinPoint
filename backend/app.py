@@ -22,4 +22,4 @@ app.register_blueprint(campaign_bp, url_prefix="/api/campaigns")
 
 if __name__ == "__main__":
     os.makedirs(os.getenv("UPLOAD_FOLDER", "uploads"), exist_ok=True)
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)

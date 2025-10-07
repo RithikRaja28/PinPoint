@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:pinpoint/config.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -153,7 +153,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   Future<void> _submitCampaign() async {
     setState(() => _isSubmitting = true);
     try {
-      final uri = Uri.parse('http://10.0.2.2:5000/api/campaigns/');
+      final uri = Uri.parse(buildApiUrl('/api/campaigns/'));
       final request = http.MultipartRequest('POST', uri);
 
       request.fields['title'] = _titleController.text.trim();
@@ -191,7 +191,6 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
-
 
   // ------------------- Date & Time Pickers --------------------
   Future<void> _pickStartDate() async {
