@@ -24,7 +24,7 @@ class DashboardScreen extends StatelessWidget {
     final end = DateTime.parse(campaign['end']);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F5FB),
+      backgroundColor: const Color(0xFFF5F3FE),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -49,145 +49,145 @@ class DashboardScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: Scrollbar(
-          thumbVisibility: true,
-          radius: const Radius.circular(8),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: screenSize.width * 0.04,
-                vertical: screenSize.height * 0.02,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _animatedHeaderCard(screenSize, campaign, start, end, context),
-                  const SizedBox(height: 25),
-                  _horizontalScrollStats(screenSize),
-                  const SizedBox(height: 25),
-                  _overviewCard(screenSize, context, campaign, start, end),
-                  const SizedBox(height: 25),
-                  _analyticsCard(screenSize),
-                  const SizedBox(height: 25),
-                  _communityCard(context, screenSize),
-                ],
-              ),
-            ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenSize.width * 0.04,
+            vertical: screenSize.height * 0.02,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _headerCard(screenSize, campaign, start, end, context),
+              const SizedBox(height: 25),
+              _horizontalScrollStats(screenSize),
+              const SizedBox(height: 25),
+              _overviewCard(screenSize, context, campaign, start, end),
+              const SizedBox(height: 25),
+              _analyticsCard(screenSize),
+              const SizedBox(height: 25),
+              _communityCard(context, screenSize),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // ====== Animated Gradient Header ======
-  Widget _animatedHeaderCard(Size screenSize, Map<String, dynamic> campaign,
+  // ====== Header with Neon Active Badge ======
+  Widget _headerCard(Size screenSize, Map<String, dynamic> campaign,
       DateTime start, DateTime end, BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      duration: const Duration(seconds: 1),
-      curve: Curves.easeOutCubic,
-      tween: Tween(begin: 0.0, end: 1.0),
-      builder: (context, value, child) => Opacity(
-        opacity: value,
-        child: Transform.translate(
-            offset: Offset(0, 20 * (1 - value)), child: child),
-      ),
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.all(screenSize.width * 0.05),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF7C4DFF), Color(0xFF9C4DFF), Color(0xFFB388FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.deepPurple.withOpacity(0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(screenSize.width * 0.05),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF7C4DFF), Color(0xFF9C4DFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Row(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 400),
-              width: screenSize.width * 0.17,
-              height: screenSize.width * 0.17,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(Icons.campaign_rounded,
-                  color: Colors.white, size: 40),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurple.withOpacity(0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: screenSize.width * 0.17,
+            height: screenSize.width * 0.17,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
             ),
-            SizedBox(width: screenSize.width * 0.05),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Recent Campaign",
-                      style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 14,
-                          letterSpacing: 0.4)),
-                  const SizedBox(height: 5),
-                  Text(
-                    campaign['title'],
+            child: const Icon(Icons.campaign_rounded,
+                color: Colors.white, size: 40),
+          ),
+          SizedBox(width: screenSize.width * 0.05),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Recent Campaign",
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        letterSpacing: 0.3)),
+                const SizedBox(height: 4),
+                Text(campaign['title'],
                     style: const TextStyle(
                         color: Colors.white,
                         fontSize: 20,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    '${campaign['offer']} • ${campaign['radius_km'].toStringAsFixed(1)} km',
-                    style:
-                        const TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
-              ),
+                        fontWeight: FontWeight.bold)),
+                Text('${campaign['offer']} • ${campaign['radius_km']} km',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              ],
             ),
-            Chip(
-              backgroundColor: const Color.fromARGB(255, 140, 136, 136).withOpacity(0.25),
-              label: const Text('Active',
-                  style: TextStyle(color: Colors.white, fontSize: 12)),
-            ),
-          ],
+          ),
+          _neonBadge("ACTIVE"),
+        ],
+      ),
+    );
+  }
+
+  // Neon Active Badge
+  Widget _neonBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00E676), Color(0xFF69F0AE)],
+        ),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.greenAccent.withOpacity(0.6),
+            blurRadius: 12,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.8,
         ),
       ),
     );
   }
 
- // ====== Horizontally Scrollable Stats ======
-Widget _horizontalScrollStats(Size screenSize) {
-  final stats = [
-    {'title': 'Impressions', 'value': '1.2k', 'icon': Icons.remove_red_eye},
-    {'title': 'Clicks', 'value': '312', 'icon': Icons.touch_app},
-    {'title': 'Conversions', 'value': '68', 'icon': Icons.trending_up},
-    {'title': 'Budget Spent', 'value': '48%', 'icon': Icons.account_balance},
-  ];
+  // ====== Scrollable Stats ======
+  Widget _horizontalScrollStats(Size screenSize) {
+    final stats = [
+      {'title': 'Impressions', 'value': '1.2k', 'icon': Icons.remove_red_eye},
+      {'title': 'Clicks', 'value': '312', 'icon': Icons.touch_app},
+      {'title': 'Conversions', 'value': '68', 'icon': Icons.trending_up},
+      {'title': 'Budget Spent', 'value': '48%', 'icon': Icons.account_balance},
+    ];
 
-  return SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
-    child: Row(
-      children: stats
-          .map(
-            (s) => _HoverCard(
-              width: screenSize.width * 0.45,
-              title: s['title'].toString(),  // ✅ Fixed here
-              value: s['value'].toString(),  // ✅ Fixed here
-              icon: s['icon'] as IconData,
-            ),
-          )
-          .toList(),
-    ),
-  );
-}
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: stats
+            .map(
+              (s) => _HoverCard(
+                width: screenSize.width * 0.45,
+                title: s['title'].toString(),
+                value: s['value'].toString(),
+                icon: s['icon'] as IconData,
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
 
-
-  // ===== Overview Card =====
+  // ====== Overview Card with Stylish Buttons ======
   Widget _overviewCard(Size screenSize, BuildContext context,
       Map<String, dynamic> campaign, DateTime start, DateTime end) {
     return _HoverCardContainer(
@@ -209,7 +209,7 @@ Widget _horizontalScrollStats(Size screenSize) {
                 const Icon(Icons.location_on, color: Colors.purple, size: 18),
                 const SizedBox(width: 6),
                 Text('${campaign['radius_km']} km radius'),
-                const SizedBox(width: 18),
+                const SizedBox(width: 16),
                 const Icon(Icons.schedule, color: Colors.indigo, size: 18),
                 const SizedBox(width: 6),
                 Expanded(
@@ -219,27 +219,36 @@ Widget _horizontalScrollStats(Size screenSize) {
               ],
             ),
             const SizedBox(height: 18),
-            Wrap(
-              spacing: 10,
+            Row(
               children: [
-                _glowButton(Icons.edit_outlined, "Edit",
-                    color: const Color.fromARGB(255, 155, 107, 206), onTap: () {}),
-                _glowOutlineButton(Icons.share_outlined, "Share",
-                    onTap: () {}),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text("Analytics",
-                      style: TextStyle(color: Color(0xFF6A00F8))),
+                _glossyButton(
+                  text: "Edit",
+                  icon: Icons.edit,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6A00F8), Color(0xFF7E57C2)],
+                  ),
+                  onTap: () {},
                 ),
+                const SizedBox(width: 10),
+                _glossyButton(
+                  text: "Share",
+                  icon: Icons.share_outlined,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF9C4DFF), Color(0xFFCE93D8)],
+                  ),
+                  onTap: () {},
+                ),
+                const SizedBox(width: 10),
+                _glassButton("Analytics", onTap: () {}),
               ],
-            ),
+            )
           ],
         ),
       ),
     );
   }
 
-  // ===== Analytics Card =====
+  // ====== Analytics Card ======
   Widget _analyticsCard(Size screenSize) {
     return _HoverCardContainer(
       child: Padding(
@@ -274,7 +283,7 @@ Widget _horizontalScrollStats(Size screenSize) {
     );
   }
 
-  // ===== Community Section =====
+  // ====== Community Section ======
   Widget _communityCard(BuildContext context, Size screenSize) {
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, '/community'),
@@ -323,57 +332,64 @@ Widget _horizontalScrollStats(Size screenSize) {
     );
   }
 
-  // ===== Button styles =====
-  Widget _glowButton(IconData icon, String text,
-      {required Color color, required VoidCallback onTap}) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+  // ====== Glossy Gradient Buttons ======
+  Widget _glossyButton({
+    required String text,
+    required IconData icon,
+    required Gradient gradient,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Ink(
         decoration: BoxDecoration(
-          gradient: LinearGradient(colors: [color, color.withOpacity(0.7)]),
-          borderRadius: BorderRadius.circular(10),
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: Colors.deepPurple.withOpacity(0.2),
               blurRadius: 10,
-              spreadRadius: 1,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-          ),
-          icon: Icon(icon, size: 18),
-          label: Text(text),
-          onPressed: onTap,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              text,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _glowOutlineButton(IconData icon, String text,
-      {required VoidCallback onTap}) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: OutlinedButton.icon(
-        icon: Icon(icon, size: 18, color: const Color(0xFF6A00F8)),
-        label: Text(text,
-            style: const TextStyle(color: Color(0xFF6A00F8), fontSize: 14)),
-        style: OutlinedButton.styleFrom(
-          side: const BorderSide(color: Color(0xFF6A00F8)),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+  Widget _glassButton(String text, {required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.5),
+          border: Border.all(color: const Color(0xFF6A00F8), width: 1),
+          borderRadius: BorderRadius.circular(10),
         ),
-        onPressed: onTap,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Text(
+          text,
+          style: const TextStyle(color: Color(0xFF6A00F8), fontSize: 14),
+        ),
       ),
     );
   }
 }
 
-// ======= Hoverable Card Component =======
+// ======= Hover Card for Stats =======
 class _HoverCard extends StatefulWidget {
   final String title;
   final String value;
@@ -391,6 +407,7 @@ class _HoverCard extends StatefulWidget {
 
 class _HoverCardState extends State<_HoverCard> {
   bool _hover = false;
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -407,7 +424,7 @@ class _HoverCardState extends State<_HoverCard> {
           boxShadow: [
             BoxShadow(
               color: _hover
-                  ? Colors.deepPurple.withOpacity(0.2)
+                  ? Colors.deepPurple.withOpacity(0.25)
                   : Colors.black12.withOpacity(0.05),
               blurRadius: _hover ? 14 : 6,
               offset: const Offset(0, 5),
@@ -435,7 +452,7 @@ class _HoverCardState extends State<_HoverCard> {
   }
 }
 
-// ======= Generic Hover Card Container =======
+// ======= Hover Container =======
 class _HoverCardContainer extends StatefulWidget {
   final Widget child;
   const _HoverCardContainer({required this.child});
@@ -446,7 +463,6 @@ class _HoverCardContainer extends StatefulWidget {
 
 class _HoverCardContainerState extends State<_HoverCardContainer> {
   bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
