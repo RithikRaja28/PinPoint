@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
+import 'package:pinpoint/screens/dashboard_screen.dart';
 
 class CreateCampaignScreen extends StatefulWidget {
   const CreateCampaignScreen({super.key});
@@ -174,9 +175,12 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
         _showSnack("🎉 Campaign created successfully!");
         final data = json.decode(respStr);
         print("Campaign saved: $data");
-        // Navigate to dashboard or another page
-        if (mounted)
-          Navigator.pop(context); // example: go back to previous screen
+
+        if (mounted) setState(() => _isSubmitting = false);
+
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
       } else {
         _showSnack("❌ Failed to create campaign: ${response.statusCode}");
         print("Error: $respStr");
@@ -187,6 +191,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       if (mounted) setState(() => _isSubmitting = false);
     }
   }
+
 
   // ------------------- Date & Time Pickers --------------------
   Future<void> _pickStartDate() async {
