@@ -52,6 +52,7 @@ dependencies:
   dart_geohash: ^2.1.0
   image_picker: ^0.8.7+4
   flutter_material_pickers: ^3.0.0
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:

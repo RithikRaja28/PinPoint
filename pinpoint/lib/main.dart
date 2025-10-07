@@ -1,10 +1,37 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pinpoint/screens/create_campaign_screen.dart';
 import 'package:pinpoint/screens/dashboard_screen.dart';
 import 'package:pinpoint/screens/auth_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:async';
+import 'dart:ui';
 
-void main() {
-  runApp(const CampaignApp());
+Future<void> main() async {
+  // Load environment variables from .env file
+ try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print("⚠️ .env file not found! Defaulting to empty values.");
+  }
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Framework-level errors (UI)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    print('🔥 Flutter framework error: ${details.exception}');
+    print(details.stack);
+  };
+
+  // Async or isolate-level errors
+  PlatformDispatcher.instance.onError = (error, stack) {
+    print('🚨 Async error: $error');
+    print(stack);
+    return true;
+  };
+  debugDefaultTargetPlatformOverride = TargetPlatform.android;
+
+  runApp(CampaignApp());
 }
 
 class CampaignApp extends StatelessWidget {

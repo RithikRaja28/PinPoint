@@ -181,7 +181,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   Future<void> _submitCampaign() async {
     setState(() => _isSubmitting = true);
     try {
-      final uri = Uri.parse('http://10.0.2.2:5000/api/campaigns/');
+      final uri = Uri.parse('http://192.168.1.11:5000/api/campaigns/');
       final request = http.MultipartRequest('POST', uri);
 
       request.fields['title'] = _titleController.text.trim();
