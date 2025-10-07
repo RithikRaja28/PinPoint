@@ -12,27 +12,27 @@ class CustomerPage extends StatelessWidget {
     final UserModel? current_User = currentUser;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Customer Dashboard"),
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              // Sign out from Firebase
-              await FirebaseAuth.instance.signOut();
+      // appBar: AppBar(
+      //   title: const Text("Customer Dashboard"),
+      //   automaticallyImplyLeading: false,
+      //   actions: [
+      //     IconButton(
+      //       icon: const Icon(Icons.logout),
+      //       onPressed: () async {
+      //         // Sign out from Firebase
+      //         await FirebaseAuth.instance.signOut();
 
-              // Clear currentUser globally
-              currentUser = null;
+      //         // Clear currentUser globally
+      //         currentUser = null;
 
-              // Navigate back to root
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil('/', (route) => false);
-            },
-          ),
-        ],
-      ),
+      //         // Navigate back to root
+      //         Navigator.of(
+      //           context,
+      //         ).pushNamedAndRemoveUntil('/', (route) => false);
+      //       },
+      //     ),
+      //   ],
+      // ),
       body: Center(
         child: currentUser == null
             ? const Text("No user found")

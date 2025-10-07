@@ -1065,7 +1065,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           ),
           _buildInput(
             controller: _cityController,
-            label: "City (in lowercase without space)",
+            label: "City / Town (in lowercase without space)",
           ),
           const SizedBox(height: 12),
           _buildInput(
@@ -1165,7 +1165,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: const Color(0xFF6A00F8), // your blue/purple shade
-        statusBarIconBrightness: Brightness.light, // for light icons on dark bg
+        // statusBarIconBrightness: Brightness.light, // for light icons on dark bg
         // statusBarBrightness: Brightness.dark, // for iOS devices
       ),
     );
