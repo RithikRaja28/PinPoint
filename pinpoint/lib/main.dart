@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pinpoint/screens/collob_request_store.dart';
 import 'package:pinpoint/screens/colob_request_list.dart';
@@ -9,13 +10,42 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:pinpoint/services/phone_auth_service.dart';
 import 'package:pinpoint/globals.dart';
 
-void main() async {
+// void main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+
+//   // Then initialize Firebase
+//   await Firebase.initializeApp();
+
+//   runApp(const CampaignApp());
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:async';
+import 'dart:ui';
+
+Future<void> main() async {
+  // Load environment variables from .env file
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print("⚠️ .env file not found! Defaulting to empty values.");
+  }
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Then initialize Firebase
-  await Firebase.initializeApp();
+  // Framework-level errors (UI)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    print('🔥 Flutter framework error: ${details.exception}');
+    print(details.stack);
+  };
 
-  runApp(const CampaignApp());
+  // Async or isolate-level errors
+  PlatformDispatcher.instance.onError = (error, stack) {
+    print('🚨 Async error: $error');
+    print(stack);
+    return true;
+  };
+  debugDefaultTargetPlatformOverride = TargetPlatform.android;
+
+  runApp(CampaignApp());
 }
 
 class CampaignApp extends StatelessWidget {
