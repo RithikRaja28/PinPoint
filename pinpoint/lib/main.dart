@@ -11,7 +11,6 @@ import 'package:pinpoint/screens/auth_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:pinpoint/screens/splash_screen.dart';
 import 'package:pinpoint/services/phone_auth_service.dart';
-import 'package:pinpoint/globals.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:pinpoint/screens/shops_list_screen.dart';
 import 'package:pinpoint/screens/shop_detail_screen.dart';
@@ -20,9 +19,6 @@ import 'dart:async';
 import 'dart:ui';
 
 // Existing screens
-import 'package:pinpoint/screens/create_campaign_screen.dart';
-import 'package:pinpoint/screens/dashboard_screen.dart';
-import 'package:pinpoint/screens/auth_screen.dart';
 
 // Newly added community screens
 import 'package:pinpoint/screens/community_feed_screen.dart';

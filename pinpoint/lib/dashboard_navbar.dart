@@ -1,63 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'package:pinpoint/screens/community_feed_screen.dart';
-// import 'package:pinpoint/screens/create_campaign_screen.dart';
-// import 'package:pinpoint/screens/dashboard_screen.dart';
-// import 'package:pinpoint/screens/customer_screen.dart'; // Import CustomerPage
-
-// class DashboardNavBar extends StatefulWidget {
-//   const DashboardNavBar({super.key});
-
-//   @override
-//   State<DashboardNavBar> createState() => _DashboardNavBarState();
-// }
-
-// class _DashboardNavBarState extends State<DashboardNavBar> {
-//   int _selectedIndex = 0;
-
-//   final _pages = const [
-//     DashboardScreen(),
-//     CreateCampaignScreen(),
-//     CommunityFeedScreen(),
-//     CustomerPage(), // Add CustomerPage here
-//   ];
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: _pages[_selectedIndex],
-//       bottomNavigationBar: NavigationBar(
-//         selectedIndex: _selectedIndex,
-//         onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-//         backgroundColor: const Color(0xFF6A00F8),
-//         indicatorColor: Colors.white24,
-//         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-//         destinations: const [
-//           NavigationDestination(
-//             icon: Icon(Icons.dashboard_outlined, color: Colors.white),
-//             selectedIcon: Icon(Icons.dashboard, color: Colors.white),
-//             label: "Dashboard",
-//           ),
-//           NavigationDestination(
-//             icon: Icon(Icons.campaign_outlined, color: Colors.white),
-//             selectedIcon: Icon(Icons.campaign, color: Colors.white),
-//             label: "Campaigns",
-//           ),
-//           NavigationDestination(
-//             icon: Icon(Icons.people_alt_outlined, color: Colors.white),
-//             selectedIcon: Icon(Icons.people, color: Colors.white),
-//             label: "Community",
-//           ),
-//           NavigationDestination(
-//             icon: Icon(Icons.person_outline, color: Colors.white),
-//             selectedIcon: Icon(Icons.person, color: Colors.white),
-//             label: "Customer",
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pinpoint/screens/collab_request_list.dart';
@@ -78,10 +18,10 @@ class DashboardNavBar extends StatefulWidget {
 class _DashboardNavBarState extends State<DashboardNavBar> {
   int _selectedIndex = 0;
 
-  final _pages = [
-    const DashboardScreen(),
-    const CreateCampaignScreen(),
-    const CommunityFeedScreen(),
+  final _pages = const [
+    DashboardScreen(),
+    CreateCampaignScreen(),
+    CommunityFeedScreen(),
     ColobRequestList(),
   ];
 
@@ -90,92 +30,176 @@ class _DashboardNavBarState extends State<DashboardNavBar> {
     final UserModel? user = currentUser;
 
     return Scaffold(
-      // Top AppBar with user icon and sign-out
-      appBar: AppBar(
-        title: Text(_getPageTitle(_selectedIndex)),
-        backgroundColor: const Color(0xFF6A00F8),
-        automaticallyImplyLeading: false,
-        actions: [
-          if (user != null)
-            Padding(
-              padding: const EdgeInsets.only(right: 12.0),
+      extendBody: true,
+      backgroundColor: Colors.grey[100],
+
+      // ---------- TOP APP BAR ----------
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF6A00F8), Color(0xFF7C4DFF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14.0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: Colors.white24,
-                    child: Text(
-                      user.name.isNotEmpty ? user.name[0].toUpperCase() : "?",
-                      style: const TextStyle(color: Colors.white),
-                    ),
+                  // ---- App Logo + Name ----
+                  Row(
+                    children: const [
+                      Icon(Icons.location_on_rounded,
+                          color: Colors.white, size: 28),
+                      SizedBox(width: 6),
+                      Text(
+                        "PinPoint",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(user.name, style: const TextStyle(fontSize: 16)),
+
+                  // ---- Avatar + Logout ----
+                  Row(
+                    children: [
+                      if (user != null)
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const CustomerPage()),
+                            );
+                          },
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.white.withOpacity(0.25),
+                            child: Text(
+                              user.name.isNotEmpty
+                                  ? user.name[0].toUpperCase()
+                                  : "?",
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 10),
+                      IconButton(
+                        tooltip: "Logout",
+                        icon: const Icon(Icons.logout, color: Colors.white),
+                        onPressed: () async {
+                          await FirebaseAuth.instance.signOut();
+                          currentUser = null;
+                          if (context.mounted) {
+                            Navigator.of(context)
+                                .pushNamedAndRemoveUntil('/', (r) => false);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              currentUser = null;
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil('/', (route) => false);
-            },
           ),
-        ],
+        ),
       ),
 
-      // Body
+      // ---------- BODY ----------
       body: _pages[_selectedIndex],
 
-      // Bottom Navigation Bar
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-        backgroundColor: const Color(0xFF6A00F8),
-        indicatorColor: Colors.white24,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined, color: Colors.white),
-            selectedIcon: Icon(Icons.dashboard, color: Colors.white),
-            label: "Dashboard",
+      // ---------- BOTTOM NAVBAR ----------
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: NavigationBarTheme(
+          data: NavigationBarThemeData(
+            indicatorColor: Colors.transparent,
+            backgroundColor: Colors.white,
+            labelTextStyle: MaterialStateProperty.resolveWith<TextStyle>(
+              (states) {
+                if (states.contains(MaterialState.selected)) {
+                  return const TextStyle(
+                    color: Color(0xFF6A00F8), // Violet for selected
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  );
+                }
+                return const TextStyle(
+                  color: Colors.grey, // Grey for unselected
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                );
+              },
+            ),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.campaign_outlined, color: Colors.white),
-            selectedIcon: Icon(Icons.campaign, color: Colors.white),
-            label: "Campaigns",
+          child: NavigationBar(
+            height: 65,
+            backgroundColor: Colors.white,
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            destinations: [
+              _buildNavItem(Icons.dashboard_outlined, Icons.dashboard, "Dashboard", 0),
+              _buildNavItem(Icons.campaign_outlined, Icons.campaign, "Campaigns", 1),
+              _buildNavItem(Icons.people_alt_outlined, Icons.people, "Community", 2),
+              _buildNavItem(Icons.person_outline, Icons.person, "Requests", 3),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.people_alt_outlined, color: Colors.white),
-            selectedIcon: Icon(Icons.people, color: Colors.white),
-            label: "Community",
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline, color: Colors.white),
-            selectedIcon: Icon(Icons.person, color: Colors.white),
-            label: "Customer",
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  // Helper function to get page title based on index
-  String _getPageTitle(int index) {
-    switch (index) {
-      case 0:
-        return "Dashboard";
-      case 1:
-        return "Campaigns";
-      case 2:
-        return "Community";
-      case 3:
-        return "Customer Dashboard";
-      default:
-        return "";
-    }
+  // ---------- NAV ITEM BUILDER ----------
+  NavigationDestination _buildNavItem(
+      IconData icon, IconData selectedIcon, String label, int index) {
+    final bool isSelected = _selectedIndex == index;
+
+    return NavigationDestination(
+      icon: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.transparent,
+        ),
+        child: Icon(
+          isSelected ? selectedIcon : icon,
+          color: isSelected
+              ? const Color(0xFF6A00F8) // Violet when active
+              : Colors.grey, // Grey when inactive
+          size: isSelected ? 28 : 26,
+          shadows: isSelected
+              ? [
+                  const Shadow(
+                    color: Color(0x336A00F8),
+                    blurRadius: 10,
+                    offset: Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+      ),
+      label: label,
+    );
   }
 }
