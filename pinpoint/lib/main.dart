@@ -9,6 +9,7 @@ import 'package:pinpoint/screens/dashboard_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:pinpoint/screens/auth_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:pinpoint/screens/splash_screen.dart';
 import 'package:pinpoint/services/phone_auth_service.dart';
 import 'package:pinpoint/globals.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -131,7 +132,9 @@ class CampaignApp extends StatelessWidget {
       title: 'Campaign Builder',
       theme: theme,
       routes: {
-        '/': (ctx) => const RootScreen(),
+        // '/': (ctx) => const RootScreen(),
+        '/': (ctx) => const SplashScreen(),
+        '/root': (ctx) => const RootScreen(),
         '/create_campaign': (ctx) => const CreateCampaignScreen(),
         '/dashboard': (ctx) => const DashboardScreen(),
         '/community': (ctx) => const CommunityFeedScreen(),
@@ -140,7 +143,7 @@ class CampaignApp extends StatelessWidget {
         '/customer': (ctx) => CustomerPage(),
         '/colab_request': (ctx) => ColobRequestList(),
       },
-      initialRoute: '/dashboard',
+      initialRoute: '/',
     );
   }
 }
