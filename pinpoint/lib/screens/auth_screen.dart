@@ -242,7 +242,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       await showStepDialog(step: steps[i], stepIndex: i);
     }
 
-    Navigator.pushReplacementNamed(context, '/dashboard');
+    Navigator.pushReplacementNamed(context, '/');
   }
 
   void _toggleAuthMode() {
@@ -283,11 +283,13 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
     // Determine navigation route
     final userType = userData['userType'];
-    if (userType == 'business') {
-      Navigator.pushReplacementNamed(context, '/dashboard');
-    } else {
-      Navigator.pushReplacementNamed(context, '/colab_request');
-    }
+    // if (userType == 'business') {
+    //   Navigator.pushReplacementNamed(context, '/dashboard');
+    // } else {
+    //   Navigator.pushReplacementNamed(context, '/colab_request');
+    // }
+
+    Navigator.pushReplacementNamed(context, '/');
   }
 
   @override
@@ -416,7 +418,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       if (_selectedUserType == UserType.business) {
         _showConsentDialogs();
       } else {
-        Navigator.pushReplacementNamed(context, '/customer');
+        Navigator.pushReplacementNamed(context, '/');
       }
     } on FirebaseAuthException catch (e) {
       String message = "Signup failed. Please try again.";
@@ -1007,11 +1009,12 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           "Logged in user type: ${currentUser?.userType}, collection: $collectionUsed",
         );
 
-        if (_selectedUserType == UserType.business) {
-          Navigator.pushReplacementNamed(context, '/dashboard');
-        } else {
-          Navigator.pushReplacementNamed(context, '/customer');
-        }
+        // if (_selectedUserType == UserType.business) {
+        //   Navigator.pushReplacementNamed(context, '/dashboard');
+        // } else {
+        //   Navigator.pushReplacementNamed(context, '/customer');
+        // }
+        Navigator.pushReplacementNamed(context, '/');
       } else {
         _showSnack("User not found, check the Usertype.");
       }
