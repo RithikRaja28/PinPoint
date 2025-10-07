@@ -52,6 +52,10 @@ dependencies:
   dart_geohash: ^2.1.0
   image_picker: ^0.8.7+4
   flutter_material_pickers: ^3.0.0
+  geofence_service: ^3.0.0
+  flutter_local_notifications: ^17.2.2
+  permission_handler: ^11.3.0
+  fl_location_platform_interface: ^1.1.1
 
 dev_dependencies:
   flutter_test:
