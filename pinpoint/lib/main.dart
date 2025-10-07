@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:pinpoint/screens/collab_request_store.dart';
 import 'package:pinpoint/screens/collab_request_list.dart';
 import 'package:pinpoint/screens/create_campaign_screen.dart';
 import 'package:pinpoint/screens/customer_screen.dart';
@@ -8,15 +7,11 @@ import 'package:pinpoint/screens/dashboard_screen.dart';
 import 'package:pinpoint/screens/auth_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:pinpoint/services/phone_auth_service.dart';
-import 'package:pinpoint/globals.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async';
 import 'dart:ui';
 
 // Existing screens
-import 'package:pinpoint/screens/create_campaign_screen.dart';
-import 'package:pinpoint/screens/dashboard_screen.dart';
-import 'package:pinpoint/screens/auth_screen.dart';
 
 // Newly added community screens
 import 'package:pinpoint/screens/community_feed_screen.dart';
@@ -113,7 +108,7 @@ class CampaignApp extends StatelessWidget {
         '/customer': (ctx) => CustomerPage(),
         '/colab_request': (ctx) => ColobRequestList(),
       },
-      initialRoute: '/',
+      initialRoute: '/customer',
     );
   }
 }

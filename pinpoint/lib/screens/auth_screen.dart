@@ -39,9 +39,9 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   final _descriptionController = TextEditingController();
   LatLng? _shopLocation;
 
-  bool _otpSent = false;
+  final bool _otpSent = false;
   bool _loading = false;
-  String _generatedOtp = "";
+  final String _generatedOtp = "";
 
   // animations
   late final AnimationController _gradientController;
@@ -394,7 +394,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           ? 'stores'
           : 'users';
 
-      print("${collectionName} jjjjjjj");
+      print("$collectionName jjjjjjj");
       await FirebaseFirestore.instance
           .collection(collectionName)
           .doc(uid)
