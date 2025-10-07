@@ -33,6 +33,8 @@ import 'package:pinpoint/screens/create_post_screen.dart';
 Future<void> main() async {
   // Load environment variables
   // Load environment variables from .env file
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
