@@ -7,8 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pinpoint/globals.dart';
 import 'package:pinpoint/user_model.dart';
-
-// enum UserType { business, customer }
+import 'package:flutter/services.dart';
 
 enum AuthMode { login, signup }
 
@@ -34,6 +33,10 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   final _otpController = TextEditingController();
   final _shopNameController = TextEditingController();
   final _shopContactController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _districtController = TextEditingController();
+  final _descriptionController = TextEditingController();
   LatLng? _shopLocation;
 
   bool _otpSent = false;
@@ -253,6 +256,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _checkLoginStatus();
     _gradientController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
@@ -261,6 +265,29 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+  }
+
+  Future<void> _checkLoginStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return; // no user logged in → stay on login page
+
+    // Fetch user details from Firestore
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    if (!doc.exists) return;
+
+    final userData = doc.data();
+    if (userData == null) return;
+
+    // Determine navigation route
+    final userType = userData['userType'];
+    if (userType == 'business') {
+      Navigator.pushReplacementNamed(context, '/dashboard');
+    } else {
+      Navigator.pushReplacementNamed(context, '/colab_request');
+    }
   }
 
   @override
@@ -342,6 +369,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
+        city: _cityController.text.trim(),
+        district: _districtController.text.trim(),
         userType: _selectedUserType,
         shopName: _selectedUserType == UserType.business
             ? _shopNameController.text.trim()
@@ -349,6 +378,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
         shopContact: _selectedUserType == UserType.business
             ? _shopContactController.text.trim()
             : null,
+        address: _addressController.text.trim(),
+        description: _descriptionController.text.trim(),
         shopLat: _selectedUserType == UserType.business
             ? _shopLocation?.latitude ?? 20.5937
             : null,
@@ -362,11 +393,23 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       final collectionName = _selectedUserType == UserType.business
           ? 'stores'
           : 'users';
+
       print("${collectionName} jjjjjjj");
       await FirebaseFirestore.instance
           .collection(collectionName)
           .doc(uid)
           .set(userModel.toMap());
+
+      await FirebaseFirestore.instance.collection("collabs").doc(uid).set({
+        'shops': [],
+      });
+
+      await FirebaseFirestore.instance
+          .collection("cities")
+          .doc(_cityController.text.trim())
+          .set({
+            'shops': FieldValue.arrayUnion([uid]),
+          }, SetOptions(merge: true));
 
       _showSnack("Signup successful for ${_selectedUserType.name}");
       await Future.delayed(const Duration(milliseconds: 500));
@@ -956,6 +999,10 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           shopLat: userData['shopLocation']?['lat']?.toDouble(),
           shopLng: userData['shopLocation']?['lng']?.toDouble(),
           createdAt: userData['createdAt'],
+          city: userData['city'],
+          district: userData['district'],
+          description: userData['description'],
+          address: userData['address'],
         );
 
         // ✅ Optional: Store globally for app session
@@ -1019,6 +1066,15 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
             label: "Mobile number",
             keyboard: TextInputType.phone,
           ),
+          _buildInput(
+            controller: _cityController,
+            label: "City (in lowercase without space)",
+          ),
+          const SizedBox(height: 12),
+          _buildInput(
+            controller: _districtController,
+            label: "District (in lowercase without space)",
+          ),
           const SizedBox(height: 12),
           _buildInput(
             controller: _passwordController,
@@ -1032,6 +1088,14 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
             _buildInput(
               controller: _shopContactController,
               label: "Shop contact",
+            ),
+            const SizedBox(height: 12),
+            const SizedBox(height: 12),
+            _buildInput(controller: _addressController, label: "Full Address"),
+            const SizedBox(height: 12),
+            _buildInput(
+              controller: _descriptionController,
+              label: "Description",
             ),
             const SizedBox(height: 12),
             // shop location with animated state
@@ -1100,6 +1164,14 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     } else {
       _tabsController.forward();
     }
+
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: const Color(0xFF6A00F8), // your blue/purple shade
+        statusBarIconBrightness: Brightness.light, // for light icons on dark bg
+        // statusBarBrightness: Brightness.dark, // for iOS devices
+      ),
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7FB),

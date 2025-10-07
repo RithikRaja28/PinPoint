@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:pinpoint/screens/collob_request_store.dart';
-import 'package:pinpoint/screens/colob_request_list.dart';
+import 'package:pinpoint/screens/collab_request_store.dart';
+import 'package:pinpoint/screens/collab_request_list.dart';
 import 'package:pinpoint/screens/create_campaign_screen.dart';
 import 'package:pinpoint/screens/customer_screen.dart';
 import 'package:pinpoint/screens/dashboard_screen.dart';
@@ -9,14 +9,6 @@ import 'package:pinpoint/screens/auth_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:pinpoint/services/phone_auth_service.dart';
 import 'package:pinpoint/globals.dart';
-
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-
-//   // Then initialize Firebase
-//   await Firebase.initializeApp();
-
-//   runApp(const CampaignApp());
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async';
 import 'dart:ui';
@@ -31,9 +23,8 @@ import 'package:pinpoint/screens/community_feed_screen.dart';
 import 'package:pinpoint/screens/create_post_screen.dart';
 
 Future<void> main() async {
-  // Load environment variables
-  // Load environment variables from .env file
   WidgetsFlutterBinding.ensureInitialized();
+
   await Firebase.initializeApp();
   try {
     await dotenv.load(fileName: ".env");
@@ -50,7 +41,6 @@ Future<void> main() async {
     print(details.stack);
   };
 
-  // Handle async-level errors
   PlatformDispatcher.instance.onError = (error, stack) {
     print('🚨 Async error: $error');
     print(stack);
@@ -65,7 +55,6 @@ Future<void> main() async {
 class CampaignApp extends StatelessWidget {
   const CampaignApp({super.key});
 
-  // Pastel / light palette + accent gradient
   static const Color primary = Color(0xFF6A00F8);
   static const Color accent = Color(0xFF7C4DFF);
   static const Color bg = Color(0xFFF7F8FB);
@@ -89,9 +78,7 @@ class CampaignApp extends StatelessWidget {
       ),
       cardTheme: CardThemeData(
         elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         color: surface,
         shadowColor: Colors.black12,
       ),
@@ -126,7 +113,7 @@ class CampaignApp extends StatelessWidget {
         '/customer': (ctx) => CustomerPage(),
         '/colab_request': (ctx) => ColobRequestList(),
       },
-      initialRoute: '/colab_request',
+      initialRoute: '/',
     );
   }
 }
