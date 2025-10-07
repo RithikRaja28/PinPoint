@@ -7,7 +7,6 @@ import requests
 
 poster = Blueprint("poster", __name__)
 
-
 @poster.route("/poster", methods=["POST"])
 def poster_create():
     # --- Gemini setup ---
