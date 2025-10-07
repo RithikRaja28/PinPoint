@@ -13,6 +13,15 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:async';
 import 'dart:ui';
 
+// Existing screens
+import 'package:pinpoint/screens/create_campaign_screen.dart';
+import 'package:pinpoint/screens/dashboard_screen.dart';
+import 'package:pinpoint/screens/auth_screen.dart';
+
+// Newly added community screens
+import 'package:pinpoint/screens/community_feed_screen.dart';
+import 'package:pinpoint/screens/create_post_screen.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -22,21 +31,25 @@ Future<void> main() async {
   } catch (e) {
     print("⚠️ .env file not found! Defaulting to empty values.");
   }
+
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Handle framework-level errors
   FlutterError.onError = (FlutterErrorDetails details) {
     FlutterError.presentError(details);
     print('🔥 Flutter framework error: ${details.exception}');
     print(details.stack);
   };
+
   PlatformDispatcher.instance.onError = (error, stack) {
     print('🚨 Async error: $error');
     print(stack);
     return true;
   };
+
   debugDefaultTargetPlatformOverride = TargetPlatform.android;
 
-  runApp(CampaignApp());
+  runApp(const CampaignApp());
 }
 
 class CampaignApp extends StatelessWidget {
@@ -65,9 +78,7 @@ class CampaignApp extends StatelessWidget {
       ),
       cardTheme: CardThemeData(
         elevation: 8,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16), // ✅ can't be const
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         color: surface,
         shadowColor: Colors.black12,
       ),
@@ -94,6 +105,10 @@ class CampaignApp extends StatelessWidget {
         '/': (ctx) => const AuthScreen(),
         '/create_campaign': (ctx) => const CreateCampaignScreen(),
         '/dashboard': (ctx) => const DashboardScreen(),
+
+        // 🗣️ Community & Social Feedback Routes
+        '/community': (ctx) => const CommunityFeedScreen(),
+        '/create_post': (ctx) => const CreatePostScreen(),
         '/phone_auth': (ctx) => PhoneAuthPage(),
         '/customer': (ctx) => CustomerPage(),
         '/colab_request': (ctx) => ColobRequestList(),
