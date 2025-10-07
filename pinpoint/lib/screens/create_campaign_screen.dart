@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
 
 class CreateCampaignScreen extends StatefulWidget {
   const CreateCampaignScreen({super.key});
@@ -28,6 +30,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
 
   File? _posterFile;
   bool _generatingPoster = false;
+  bool _isSubmitting = false;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -79,6 +82,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     super.dispose();
   }
 
+  // ------------------- Step Navigation --------------------
   void _next() {
     if (_currentStep == 0 && !_step1Valid) {
       _showSnack("Please fill title & offer text.");
@@ -116,6 +120,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
 
+  // ------------------- Poster Pick & Generate --------------------
   Future<void> _pickPoster() async {
     try {
       final XFile? picked = await _picker.pickImage(
@@ -125,12 +130,10 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
         imageQuality: 80,
       );
       if (picked != null) {
-        setState(() {
-          _posterFile = File(picked.path);
-        });
+        setState(() => _posterFile = File(picked.path));
         _showSnack("Poster uploaded.");
       }
-    } catch (e) {
+    } catch (_) {
       _showSnack("Failed to pick image.");
     }
   }
@@ -145,21 +148,47 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     _showSnack("AI Poster generated (simulated).");
   }
 
-  void _submitCampaign() {
-    final campaign = {
-      'title': _titleController.text.trim(),
-      'offer': _offerController.text.trim(),
-      'radius_km': _radiusKm,
-      'start': _combinedStart.toIso8601String(),
-      'end': _combinedEnd.toIso8601String(),
-      'hasPoster': _posterFile != null,
-    };
+  // ------------------- Submit Campaign --------------------
+  Future<void> _submitCampaign() async {
+    setState(() => _isSubmitting = true);
+    try {
+      final uri = Uri.parse('http://10.0.2.2:5000/api/campaigns/');
+      final request = http.MultipartRequest('POST', uri);
 
-    Navigator.of(
-      context,
-    ).pushReplacementNamed('/dashboard', arguments: campaign);
+      request.fields['title'] = _titleController.text.trim();
+      request.fields['offer'] = _offerController.text.trim();
+      request.fields['radius_km'] = _radiusKm.toString();
+      request.fields['start'] = _combinedStart.toIso8601String();
+      request.fields['end'] = _combinedEnd.toIso8601String();
+
+      if (_posterFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath('poster', _posterFile!.path),
+        );
+      }
+
+      final response = await request.send();
+      final respStr = await response.stream.bytesToString();
+
+      if (response.statusCode == 201) {
+        _showSnack("🎉 Campaign created successfully!");
+        final data = json.decode(respStr);
+        print("Campaign saved: $data");
+        // Navigate to dashboard or another page
+        if (mounted)
+          Navigator.pop(context); // example: go back to previous screen
+      } else {
+        _showSnack("❌ Failed to create campaign: ${response.statusCode}");
+        print("Error: $respStr");
+      }
+    } catch (e) {
+      _showSnack("❌ Error: $e");
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
+  // ------------------- Date & Time Pickers --------------------
   Future<void> _pickStartDate() async {
     final now = DateTime.now();
     final date = await showDatePicker(
@@ -198,6 +227,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     if (t != null) setState(() => _endTime = t);
   }
 
+  // ------------------- Step Indicator --------------------
   Widget _stepIndicator() {
     const labels = ['Basic', 'Target', 'Poster', 'Review'];
     return Row(
@@ -234,6 +264,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     );
   }
 
+  // ------------------- UI --------------------
   @override
   Widget build(BuildContext context) {
     final steps = [
@@ -248,7 +279,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       body: SafeArea(
         child: Column(
           children: [
-            // 🌟 Header
+            // Header
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
@@ -287,7 +318,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
               ),
             ),
 
-            // 📄 Main Page
+            // Main Page
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -296,7 +327,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
               ),
             ),
 
-            // ⏭️ Footer Buttons
+            // Footer Buttons
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Row(
@@ -322,7 +353,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
-                      onPressed: _next,
+                      onPressed: _isSubmitting ? null : _next,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         backgroundColor: const Color(0xFF7E57C2),
@@ -331,7 +362,11 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
                         ),
                       ),
                       child: Text(
-                        _currentStep < 3 ? "Next →" : "🚀 Launch Campaign",
+                        _currentStep < 3
+                            ? "Next →"
+                            : _isSubmitting
+                            ? "Submitting..."
+                            : "🚀 Launch Campaign",
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -349,8 +384,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     );
   }
 
-  // ✅ CARD WIDGETS BELOW --------------------------------------------------
-
+  // ------------------- Cards --------------------
   Widget _basicInfoCard() => _cardWrapper(
     title: "📄 Basic Details",
     children: [
