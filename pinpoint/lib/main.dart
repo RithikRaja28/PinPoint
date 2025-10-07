@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pinpoint/screens/create_campaign_screen.dart';
 import 'package:pinpoint/screens/dashboard_screen.dart';
@@ -8,7 +9,11 @@ import 'dart:ui';
 
 Future<void> main() async {
   // Load environment variables from .env file
-  await dotenv.load(fileName: ".env");
+ try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print("⚠️ .env file not found! Defaulting to empty values.");
+  }
   WidgetsFlutterBinding.ensureInitialized();
 
   // Framework-level errors (UI)
@@ -24,6 +29,8 @@ Future<void> main() async {
     print(stack);
     return true;
   };
+  debugDefaultTargetPlatformOverride = TargetPlatform.android;
+
   runApp(CampaignApp());
 }
 
@@ -88,3 +95,4 @@ class CampaignApp extends StatelessWidget {
     );
   }
 }
+

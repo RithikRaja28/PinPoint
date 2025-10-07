@@ -141,19 +141,47 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
 
   Future<void> _generatePosterDummy() async {
     setState(() => _generatingPoster = true);
-    await Future.delayed(const Duration(milliseconds: 1200));
-    setState(() {
-      _posterFile = null;
-      _generatingPoster = false;
-    });
-    _showSnack("AI Poster generated (simulated).");
+
+    try {
+      final uri = Uri.parse("http://10.0.2.2:5000/api/poster");
+      final request = http.MultipartRequest('POST', uri);
+
+      request.fields['shop_name'] = _titleController.text.trim();
+      request.fields['offer_details'] = _offerController.text.trim();
+      request.fields['shop_address'] = "123 Main Street";
+
+      if (_posterFile != null) {
+        request.files.add(
+          await http.MultipartFile.fromPath('logo', _posterFile!.path),
+        );
+      }
+
+      final response = await request.send();
+      final respStr = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final data = json.decode(respStr);
+        final posterUrl = "http://10.0.2.2:5000${data['poster_url']}";
+        _showSnack("✅ AI Poster Generated!");
+        print("Poster URL: $posterUrl");
+
+        // Optional: download or preview image
+      } else {
+        _showSnack("❌ Failed to generate poster");
+        print("Error: $respStr");
+      }
+    } catch (e) {
+      _showSnack("❌ Error: $e");
+    } finally {
+      if (mounted) setState(() => _generatingPoster = false);
+    }
   }
 
   // ------------------- Submit Campaign --------------------
   Future<void> _submitCampaign() async {
     setState(() => _isSubmitting = true);
     try {
-      final uri = Uri.parse(buildApiUrl('/api/campaigns/'));
+      final uri = Uri.parse('http://192.168.1.11:5000/api/campaigns/');
       final request = http.MultipartRequest('POST', uri);
 
       request.fields['title'] = _titleController.text.trim();
@@ -486,9 +514,11 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
           const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: _generatePosterDummy,
+              onPressed: _generatingPoster ? null : _generatePosterDummy,
               icon: const Icon(Icons.auto_awesome),
-              label: const Text("Generate AI"),
+              label: _generatingPoster
+                  ? const Text("Generating...")
+                  : const Text("Generate AI"),
             ),
           ),
         ],

@@ -10,7 +10,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @campaign_bp.route("/", methods=["POST"])
 def create_campaign():
-    print("Request got!!!!")
+    print("Creating campaign...")
     try:
         title = request.form.get("title")
         offer = request.form.get("offer")
@@ -44,9 +44,15 @@ def create_campaign():
             end=end_dt,
             poster_path=poster_path
         )
-
+        print("Campaign object:", campaign_obj.__dict__)
         db.session.add(campaign_obj)
-        db.session.commit()
+        try:
+            db.session.commit()
+            print("✅ Campaign saved in DB")
+        except Exception as e:
+            db.session.rollback()
+            print("❌ DB Commit failed:", e)
+            raise e
 
         return jsonify({
             "message": "Campaign created successfully",
