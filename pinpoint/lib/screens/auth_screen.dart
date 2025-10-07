@@ -242,7 +242,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       await showStepDialog(step: steps[i], stepIndex: i);
     }
 
-    Navigator.pushReplacementNamed(context, '/dashboard');
+    Navigator.pushReplacementNamed(context, '/');
   }
 
   void _toggleAuthMode() {
@@ -283,11 +283,13 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
     // Determine navigation route
     final userType = userData['userType'];
-    if (userType == 'business') {
-      Navigator.pushReplacementNamed(context, '/dashboard');
-    } else {
-      Navigator.pushReplacementNamed(context, '/colab_request');
-    }
+    // if (userType == 'business') {
+    //   Navigator.pushReplacementNamed(context, '/dashboard');
+    // } else {
+    //   Navigator.pushReplacementNamed(context, '/colab_request');
+    // }
+
+    Navigator.pushReplacementNamed(context, '/');
   }
 
   @override
@@ -416,7 +418,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       if (_selectedUserType == UserType.business) {
         _showConsentDialogs();
       } else {
-        Navigator.pushReplacementNamed(context, '/customer');
+        Navigator.pushReplacementNamed(context, '/');
       }
     } on FirebaseAuthException catch (e) {
       String message = "Signup failed. Please try again.";
@@ -966,21 +968,15 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       final uid = userCredential.user!.uid;
 
       // 2️⃣ Try to fetch user from "users" collection first
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
+      final String collectionUsed = _selectedUserType == UserType.business
+          ? 'stores'
+          : 'users';
+
+      // Fetch the document only from the relevant collection
+      final DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection(collectionUsed)
           .doc(uid)
           .get();
-
-      String collectionUsed = 'users';
-
-      // 3️⃣ If not found in "users", check "stores"
-      if (!userDoc.exists) {
-        userDoc = await FirebaseFirestore.instance
-            .collection('stores')
-            .doc(uid)
-            .get();
-        collectionUsed = 'stores';
-      }
 
       // 4️⃣ Initialize UserModel exactly like signup
       if (userDoc.exists) {
@@ -1013,13 +1009,14 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           "Logged in user type: ${currentUser?.userType}, collection: $collectionUsed",
         );
 
-        if (_selectedUserType == UserType.business) {
-          Navigator.pushReplacementNamed(context, '/dashboard');
-        } else {
-          Navigator.pushReplacementNamed(context, '/customer');
-        }
+        // if (_selectedUserType == UserType.business) {
+        //   Navigator.pushReplacementNamed(context, '/dashboard');
+        // } else {
+        //   Navigator.pushReplacementNamed(context, '/customer');
+        // }
+        Navigator.pushReplacementNamed(context, '/');
       } else {
-        _showSnack("User record not found.");
+        _showSnack("User not found, check the Usertype.");
       }
     } on FirebaseAuthException catch (e) {
       String message = "Login failed. Please try again.";
@@ -1068,7 +1065,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           ),
           _buildInput(
             controller: _cityController,
-            label: "City (in lowercase without space)",
+            label: "City / Town (in lowercase without space)",
           ),
           const SizedBox(height: 12),
           _buildInput(
@@ -1168,7 +1165,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: const Color(0xFF6A00F8), // your blue/purple shade
-        statusBarIconBrightness: Brightness.light, // for light icons on dark bg
+        // statusBarIconBrightness: Brightness.light, // for light icons on dark bg
         // statusBarBrightness: Brightness.dark, // for iOS devices
       ),
     );

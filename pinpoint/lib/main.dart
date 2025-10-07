@@ -1,13 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:pinpoint/root_screen.dart';
+import 'package:pinpoint/screens/collab_request_store.dart';
 import 'package:pinpoint/screens/collab_request_list.dart';
 import 'package:pinpoint/screens/create_campaign_screen.dart';
 import 'package:pinpoint/screens/customer_screen.dart';
 import 'package:pinpoint/screens/dashboard_screen.dart';
+import 'package:flutter/services.dart';
 import 'package:pinpoint/screens/auth_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:pinpoint/services/phone_auth_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:pinpoint/screens/shops_list_screen.dart';
+import 'package:pinpoint/screens/shop_detail_screen.dart';
+
 import 'dart:async';
 import 'dart:ui';
 
@@ -18,9 +24,15 @@ import 'package:pinpoint/screens/community_feed_screen.dart';
 import 'package:pinpoint/screens/create_post_screen.dart';
 
 Future<void> main() async {
+  // Load environment variables from .env file
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
+
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
@@ -92,23 +104,39 @@ class CampaignApp extends StatelessWidget {
       ),
     );
 
+    // return MaterialApp(
+    //   debugShowCheckedModeBanner: false,
+    //   title: 'Campaign Builder',
+    //   theme: theme,
+    //   routes: {
+    //     '/': (ctx) => const AuthScreen(),
+    //     '/create_campaign': (ctx) => const CreateCampaignScreen(),
+    //     '/dashboard': (ctx) => const DashboardScreen(),
+    //     '/community': (ctx) => const CommunityFeedScreen(),
+    //     '/create_post': (ctx) => const CreatePostScreen(),
+    //     '/phone_auth': (ctx) => PhoneAuthPage(),
+    //     '/customer': (ctx) => CustomerPage(),
+    //     '/colab_request': (ctx) => ColobRequestList(),
+    //     '/shops': (ctx) => const ShopsListScreen(),
+    //   },
+    //   initialRoute: '/',
+    // );
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Campaign Builder',
       theme: theme,
       routes: {
-        '/': (ctx) => const AuthScreen(),
+        '/': (ctx) => const RootScreen(),
         '/create_campaign': (ctx) => const CreateCampaignScreen(),
         '/dashboard': (ctx) => const DashboardScreen(),
-
-        // 🗣️ Community & Social Feedback Routes
         '/community': (ctx) => const CommunityFeedScreen(),
         '/create_post': (ctx) => const CreatePostScreen(),
         '/phone_auth': (ctx) => PhoneAuthPage(),
         '/customer': (ctx) => CustomerPage(),
         '/colab_request': (ctx) => ColobRequestList(),
       },
-      initialRoute: '/customer',
+      initialRoute: '/',
     );
   }
 }
