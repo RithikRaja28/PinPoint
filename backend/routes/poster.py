@@ -1,70 +1,78 @@
 import os
+from flask import Blueprint, request, jsonify
 from google import genai
 from playwright.sync_api import sync_playwright
+from datetime import datetime
 import base64
-from flask import Blueprint, request, jsonify
-import requests
 
-poster = Blueprint("poster", __name__)
+poster_bp = Blueprint("poster", __name__)
 
+UPLOAD_DIR = os.path.join(os.getcwd(), "uploads", "logos")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-@poster.route("/poster", methods=["POST"])
+@poster_bp.route("/poster", methods=["POST"])
 def poster_create():
-    api_key = os.getenv("GEMINI_API_KEY")
+    try:
+        print("Generating poster...")
+        api_key = os.getenv("GEMINI_API_KEY")
+        client = genai.Client(api_key=api_key)
+
+        # --- Get campaign data ---
+        shop_name = request.form.get("shop_name", "My Shop")
+        offer_details = request.form.get("offer_details", "Special Offer!")
+        shop_address = request.form.get("shop_address", "123 Street")
+
+        # --- Handle uploaded logo ---
+        logo_data_url = ""
+        if "logo" in request.files:
+            logo_file = request.files["logo"]
+            filename = f"logo_{int(datetime.now().timestamp())}.png"
+            logo_path = os.path.join(UPLOAD_DIR, filename)
+            logo_file.save(logo_path)
+
+            with open(logo_path, "rb") as f:
+                logo_base64 = base64.b64encode(f.read()).decode("utf-8")
+            logo_data_url = f"data:image/png;base64,{logo_base64}"
+
+        # --- Gemini Prompt ---
+        prompt = f"""
+        Generate ONLY valid HTML with inline CSS (no markdown).
+        Create a visually stunning promotional poster with:
+        - Shop Name: {shop_name}
+        - Offer: {offer_details}
+        - Address: {shop_address}
+        - Logo: {logo_data_url if logo_data_url else "No logo"}
+        Styling:
+        - Gradient background, glowing animation
+        - Bold modern typography
+        - Responsive, center-aligned layout
+        """
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[prompt]
+        )
+
+        html_code = response.text.strip()
+
+        # --- Render poster screenshot ---
+        poster_filename = f"poster_{int(datetime.now().timestamp())}.png"
+        poster_path = os.path.join("uploads", poster_filename)
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page(viewport={"width": 1080, "height": 720})
+            page.set_content(html_code, wait_until="load")
+            page.screenshot(path=poster_path, full_page=True)
+            browser.close()
+
+        return jsonify({
+            "message": "Poster generated successfully!",
+            "poster_url": f"/uploads/{poster_filename}"
+        }), 200
+
+    except Exception as e:
+        print("Error:", e)
+        return jsonify({"error": str(e)}), 500  
 
 
-    client = genai.Client(api_key=api_key)
-
-    # --- Input details ---
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    logo_image_path = os.path.join(script_dir, "logos", "logo.png")
-
-    # Convert local logo to base64 so it works in HTML
-    with open(logo_image_path, "rb") as f:
-        logo_base64 = base64.b64encode(f.read()).decode("utf-8")
-    logo_data_url = f"data:image/png;base64,{logo_base64}"
-
-    shop_name = "BlueMart"
-    offer_details = "Get 50% OFF on all electronics this weekend!"
-    shop_address = "123 Main Street, Downtown City"
-
-    # --- Gemini prompt for stylish poster ---
-    prompt = f"""
-    Generate ONLY valid HTML with inline CSS (no markdown, no explanations).
-    Create a bright, flashy, visually striking promotional poster webpage with the following:
-    - Shop Logo: {logo_data_url}
-    - Shop Name: {shop_name}
-    - Offer Details: {offer_details}
-    - Address: {shop_address}
-    Design instructions:
-    - Use a modern font like 'Poppins' or 'Montserrat'
-    - Blue-themed gradient background with animated glow or shine
-    - Center-aligned content inside a rounded, semi-transparent card
-    - Large, bold text for the offer
-    - Add smooth box-shadows and color transitions
-    - Make it mobile-friendly and visually stunning
-    Return ONLY the HTML code (no markdown, no explanations, no JSON).
-    """
-
-    # --- Generate HTML using Gemini ---
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=[prompt]
-    )
-
-    html_code = response.text.strip()
-
-    # --- Save HTML for future reference (optional) ---
-    # html_file_path = os.path.join(script_dir, "poster.html")
-    # with open(html_file_path, "w", encoding="utf-8") as f:
-    #     f.write(html_code)
-
-    # --- Render HTML and save as PNG ---
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        page = browser.new_page(viewport={"width": 1080, "height": 720})
-        page.set_content(html_code, wait_until="load")
-        page.screenshot(path="poster_screenshot.png", full_page=True)
-        browser.close()
-
-    print("📸 Stylish poster generated and saved as 'poster_screenshot.png'")

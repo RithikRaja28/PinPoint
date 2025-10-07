@@ -2,6 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from database import db
 from routes.campaign import campaign_bp
+from routes.poster import poster_bp
 import os
 
 app = Flask(__name__)
@@ -19,7 +20,8 @@ with app.app_context():
     db.create_all()
 
 app.register_blueprint(campaign_bp, url_prefix="/api/campaigns")
+app.register_blueprint(poster_bp, url_prefix="/api")
 
 if __name__ == "__main__":
     os.makedirs(os.getenv("UPLOAD_FOLDER", "uploads"), exist_ok=True)
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)
