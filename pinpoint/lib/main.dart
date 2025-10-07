@@ -4,12 +4,15 @@ import 'package:pinpoint/screens/create_campaign_screen.dart';
 import 'package:pinpoint/screens/dashboard_screen.dart';
 import 'package:pinpoint/screens/auth_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:pinpoint/screens/shops_list_screen.dart';
+import 'package:pinpoint/screens/shop_detail_screen.dart';
+
 import 'dart:async';
 import 'dart:ui';
 
 Future<void> main() async {
   // Load environment variables from .env file
- try {
+  try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
     print("⚠️ .env file not found! Defaulting to empty values.");
@@ -90,9 +93,9 @@ class CampaignApp extends StatelessWidget {
         '/': (ctx) => const AuthScreen(),
         '/create_campaign': (ctx) => const CreateCampaignScreen(),
         '/dashboard': (ctx) => const DashboardScreen(),
+        '/shops': (ctx) => const ShopsListScreen(),
       },
       initialRoute: '/',
     );
   }
 }
-
