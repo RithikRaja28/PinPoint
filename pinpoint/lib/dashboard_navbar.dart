@@ -120,49 +120,58 @@ class _DashboardNavBarState extends State<DashboardNavBar> {
 
       // ---------- BOTTOM NAVBAR ----------
       bottomNavigationBar: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF6A00F8), Color(0xFF7C4DFF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black12.withOpacity(0.08),
+              color: const Color(0xFF6A00F8).withOpacity(0.3),
               blurRadius: 10,
-              offset: const Offset(0, -2),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            indicatorColor: Colors.transparent,
-            backgroundColor: Colors.white,
-            labelTextStyle: MaterialStateProperty.resolveWith<TextStyle>(
-              (states) {
-                if (states.contains(MaterialState.selected)) {
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(25),
+          child: NavigationBarTheme(
+            data: NavigationBarThemeData(
+              indicatorColor: Colors.transparent, // ✅ No globe hover
+              backgroundColor: Colors.transparent,
+              labelTextStyle: MaterialStateProperty.resolveWith<TextStyle>(
+                (states) {
+                  if (states.contains(MaterialState.selected)) {
+                    return const TextStyle(
+                      color: Colors.white, // ✅ White for selected
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    );
+                  }
                   return const TextStyle(
-                    color: Color(0xFF6A00F8), // Violet for selected
-                    fontWeight: FontWeight.bold,
+                    color: Colors.white, // ✅ White for unselected too
+                    fontWeight: FontWeight.w500,
                     fontSize: 12,
                   );
-                }
-                return const TextStyle(
-                  color: Colors.grey, // Grey for unselected
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                );
-              },
+                },
+              ),
             ),
-          ),
-          child: NavigationBar(
-            height: 65,
-            backgroundColor: Colors.white,
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (i) => setState(() => _selectedIndex = i),
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: [
-              _buildNavItem(Icons.dashboard_outlined, Icons.dashboard, "Dashboard", 0),
-              _buildNavItem(Icons.campaign_outlined, Icons.campaign, "Campaigns", 1),
-              _buildNavItem(Icons.people_alt_outlined, Icons.people, "Community", 2),
-              _buildNavItem(Icons.person_outline, Icons.person, "Requests", 3),
-            ],
+            child: NavigationBar(
+              height: 65,
+              backgroundColor: Colors.transparent,
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (i) => setState(() => _selectedIndex = i),
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              destinations: [
+                _buildNavItem(Icons.dashboard_outlined, Icons.dashboard, "Dashboard", 0),
+                _buildNavItem(Icons.campaign_outlined, Icons.campaign, "Campaigns", 1),
+                _buildNavItem(Icons.people_alt_outlined, Icons.people, "Community", 2),
+                _buildNavItem(Icons.person_outline, Icons.person, "Requests", 3),
+              ],
+            ),
           ),
         ),
       ),
@@ -176,27 +185,18 @@ class _DashboardNavBarState extends State<DashboardNavBar> {
 
     return NavigationDestination(
       icon: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.transparent,
+          color: isSelected
+              ? const Color(0xFF4B00C8) // ✅ Solid darker hover background
+              : Colors.transparent,
         ),
         child: Icon(
           isSelected ? selectedIcon : icon,
-          color: isSelected
-              ? const Color(0xFF6A00F8) // Violet when active
-              : Colors.grey, // Grey when inactive
-          size: isSelected ? 28 : 26,
-          shadows: isSelected
-              ? [
-                  const Shadow(
-                    color: Color(0x336A00F8),
-                    blurRadius: 10,
-                    offset: Offset(0, 2),
-                  ),
-                ]
-              : [],
+          color: Colors.white,
+          size: isSelected ? 28 : 24,
         ),
       ),
       label: label,
