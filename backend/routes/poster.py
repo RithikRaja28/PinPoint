@@ -10,8 +10,10 @@ poster = Blueprint("poster", __name__)
 
 @poster.route("/poster", methods=["POST"])
 def poster_create():
-    # --- Gemini setup ---
-    client = genai.Client(api_key="AIzaSyAsxQ2l6tnGZr9LUq7PbZaFgxp4Wm6Js5c")
+    api_key = os.getenv("GEMINI_API_KEY")
+
+
+    client = genai.Client(api_key=api_key)
 
     # --- Input details ---
     script_dir = os.path.dirname(os.path.abspath(__file__))
