@@ -8,7 +8,7 @@ class HeatmapScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Population Density Heatmap")),
-      body: const HeatmapOverlay(),
+      body: const HeatmapOverlay(phoneNumbers: []),
     );
   }
 }
