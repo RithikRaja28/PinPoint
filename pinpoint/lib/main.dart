@@ -116,7 +116,7 @@ class CampaignApp extends StatelessWidget {
         '/colab_request': (ctx) => ColobRequestList(),
         '/shops': (ctx) => const ShopsListScreen(),
       },
-      initialRoute: '/',
+      initialRoute: '/dashboard',
     );
   }
 }
