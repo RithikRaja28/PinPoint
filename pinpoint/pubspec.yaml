@@ -58,6 +58,7 @@ dependencies:
   #flutter_material_pickers: ^3.0.0
   permission_handler: ^11.3.0
   flutter_dotenv: ^6.0.0
+  url_launcher: ^6.3.2
 
 
 

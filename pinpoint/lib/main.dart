@@ -10,6 +10,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:pinpoint/services/phone_auth_service.dart';
 import 'package:pinpoint/globals.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:pinpoint/screens/shops_list_screen.dart';
+import 'package:pinpoint/screens/shop_detail_screen.dart';
+
 import 'dart:async';
 import 'dart:ui';
 
@@ -23,6 +26,7 @@ import 'package:pinpoint/screens/community_feed_screen.dart';
 import 'package:pinpoint/screens/create_post_screen.dart';
 
 Future<void> main() async {
+  // Load environment variables from .env file
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
@@ -110,6 +114,7 @@ class CampaignApp extends StatelessWidget {
         '/phone_auth': (ctx) => PhoneAuthPage(),
         '/customer': (ctx) => CustomerPage(),
         '/colab_request': (ctx) => ColobRequestList(),
+        '/shops': (ctx) => const ShopsListScreen(),
       },
       initialRoute: '/',
     );
