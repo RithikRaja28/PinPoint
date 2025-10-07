@@ -6,6 +6,7 @@ import 'package:pinpoint/screens/collab_request_list.dart';
 import 'package:pinpoint/screens/create_campaign_screen.dart';
 import 'package:pinpoint/screens/customer_screen.dart';
 import 'package:pinpoint/screens/dashboard_screen.dart';
+import 'package:flutter/services.dart';
 import 'package:pinpoint/screens/auth_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:pinpoint/services/phone_auth_service.dart';
@@ -31,6 +32,11 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
+
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
