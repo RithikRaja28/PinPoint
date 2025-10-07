@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "59792156121",
+    "project_id": "pinpoint-e02f5",
+    "storage_bucket": "pinpoint-e02f5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:59792156121:android:9ee0e7a125f2c4c61925c8",
+        "android_client_info": {
+          "package_name": "com.example.pinpoint"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "59792156121-v4pppbdimi28u8csafd5nu6mvrsgud6n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.pinpoint",
+            "certificate_hash": "f45e653dbed3d11db0f4ac5ae160c35fa8a7d786"
+          }
+        },
+        {
+          "client_id": "59792156121-9juenoa21j5ndt72f4lhmmkmt23dkbit.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlT4U6iA5KTEdFu6MzmGuFPzoEuGHs_Do"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "59792156121-9juenoa21j5ndt72f4lhmmkmt23dkbit.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -17,6 +17,7 @@ class CreateCampaignScreen extends StatefulWidget {
 
 class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     with TickerProviderStateMixin {
+  String? _posterUrl;
   final PageController _pageController = PageController();
   int _currentStep = 0;
 
@@ -140,16 +141,30 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   }
 
   Future<void> _generatePosterDummy() async {
+    if (_combinedStart == null || _combinedEnd == null) {
+      _showSnack("⚠️ Please select start and end date/time first.");
+      return;
+    }
+
     setState(() => _generatingPoster = true);
 
     try {
       final uri = Uri.parse("http://10.0.2.2:5000/api/poster");
       final request = http.MultipartRequest('POST', uri);
 
+      // ✅ Required fields
       request.fields['shop_name'] = _titleController.text.trim();
-      request.fields['offer_details'] = _offerController.text.trim();
+      request.fields['offer'] = _offerController.text.trim();
       request.fields['shop_address'] = "123 Main Street";
 
+      // ✅ IMPORTANT: send start and end in ISO format
+      request.fields['start'] = _combinedStart!.toIso8601String();
+      request.fields['end'] = _combinedEnd!.toIso8601String();
+
+      // Optional: radius if needed by backend
+      request.fields['radius_km'] = _radiusKm.toString();
+
+      // ✅ Attach logo if available
       if (_posterFile != null) {
         request.files.add(
           await http.MultipartFile.fromPath('logo', _posterFile!.path),
@@ -159,15 +174,18 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       final response = await request.send();
       final respStr = await response.stream.bytesToString();
 
-      if (response.statusCode == 200) {
-        final data = json.decode(respStr);
-        final posterUrl = "http://10.0.2.2:5000${data['poster_url']}";
-        _showSnack("✅ AI Poster Generated!");
-        print("Poster URL: $posterUrl");
+      print("📤 Sent Fields: ${request.fields}");
+      print("📩 Response: $respStr");
 
-        // Optional: download or preview image
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = json.decode(respStr);
+        setState(() {
+          _posterUrl = "http://10.0.2.2:5000${data['poster_url']}";
+        });
+        _showSnack("✅ AI Poster Generated!");
+        print("Poster URL: $_posterUrl");
       } else {
-        _showSnack("❌ Failed to generate poster");
+        _showSnack("❌ Failed to generate poster: ${response.statusCode}");
         print("Error: $respStr");
       }
     } catch (e) {
@@ -177,13 +195,14 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     }
   }
 
+
+
   // ------------------- Submit Campaign --------------------
   Future<void> _submitCampaign() async {
     setState(() => _isSubmitting = true);
     try {
-      final uri = Uri.parse('http://192.168.1.11:5000/api/campaigns/');
+      final uri = Uri.parse('http://10.0.2.2:5000/api/campaigns/');
       final request = http.MultipartRequest('POST', uri);
-
       request.fields['title'] = _titleController.text.trim();
       request.fields['offer'] = _offerController.text.trim();
       request.fields['radius_km'] = _radiusKm.toString();
@@ -487,10 +506,16 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   Widget _posterCard() => _cardWrapper(
     title: "🖼️ Campaign Poster",
     children: [
+      // Show local file if picked, else server-generated poster, else placeholder
       if (_posterFile != null)
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Image.file(_posterFile!, height: 200, fit: BoxFit.cover),
+        )
+      else if (_posterUrl != null)
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(_posterUrl!, height: 200, fit: BoxFit.cover),
         )
       else
         Container(
@@ -543,16 +568,23 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
         "Schedule: ${DateFormat.yMMMd().add_jm().format(_combinedStart)} → ${DateFormat.yMMMd().add_jm().format(_combinedEnd)}",
       ),
       const SizedBox(height: 16),
-      _posterFile != null
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(_posterFile!, height: 180, fit: BoxFit.cover),
-            )
-          : Container(
-              height: 180,
-              color: Colors.grey[200],
-              child: const Center(child: Text("No poster")),
-            ),
+      // Show poster (local preview first, then server-generated)
+      if (_posterFile != null)
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.file(_posterFile!, height: 180, fit: BoxFit.cover),
+        )
+      else if (_posterUrl != null)
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(_posterUrl!, height: 180, fit: BoxFit.cover),
+        )
+      else
+        Container(
+          height: 180,
+          color: Colors.grey[200],
+          child: const Center(child: Text("No poster")),
+        ),
     ],
   );
 

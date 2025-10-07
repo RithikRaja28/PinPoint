@@ -10,8 +10,7 @@ class DashboardScreen extends StatelessWidget {
     final args =
         ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
 
-    final campaign =
-        args ??
+    final campaign = args ??
         {
           'title': 'Demo Campaign',
           'offer': '20% off coffee',
@@ -34,7 +33,8 @@ class DashboardScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline),
-            onPressed: () => Navigator.of(context).pushReplacementNamed('/create_campaign'),
+            onPressed: () =>
+                Navigator.of(context).pushReplacementNamed('/create_campaign'),
             tooltip: 'Create campaign',
           ),
         ],
@@ -48,7 +48,7 @@ class DashboardScreen extends StatelessWidget {
             ),
             child: Column(
               children: [
-                // Header / Hero
+                // ======= Header / Hero =======
                 Hero(
                   tag: 'campaign-header',
                   child: Container(
@@ -96,11 +96,12 @@ class DashboardScreen extends StatelessWidget {
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 'Recent Campaign',
-                                style: Theme.of(context).textTheme.bodyLarge
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
                                     ?.copyWith(color: Colors.grey[700]),
                               ),
                               SizedBox(height: screenSize.height * 0.005),
@@ -142,7 +143,8 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: screenSize.height * 0.025),
-                // Quick stats row
+
+                // ======= Quick Stats Row =======
                 Row(
                   children: [
                     _StatCard(title: 'Impressions', value: '1.2k'),
@@ -169,7 +171,7 @@ class DashboardScreen extends StatelessWidget {
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
-                                    '\₹ 3,200',
+                                    '₹ 3,200',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
@@ -196,98 +198,18 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: screenSize.height * 0.025),
-                // Campaign Detail & Analytics
-                Column(
-                  children: [
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.all(screenSize.width * 0.04),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Overview',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: screenSize.height * 0.015),
-                            Text(campaign['offer']),
-                            SizedBox(height: screenSize.height * 0.015),
-                            Row(
-                              children: [
-                                const Icon(Icons.location_on, size: 18),
-                                SizedBox(width: screenSize.width * 0.015),
-                                Text(
-                                  '${campaign['radius_km'].toStringAsFixed(1)} km radius',
-                                ),
-                                SizedBox(width: screenSize.width * 0.04),
-                                const Icon(Icons.schedule, size: 18),
-                                SizedBox(width: screenSize.width * 0.015),
-                                Expanded(
-                                  child: Text(
-                                    '${DateFormat.yMMMd().add_jm().format(start)} → ${DateFormat.yMMMd().add_jm().format(end)}',
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: screenSize.height * 0.02),
-                            Wrap(
-                              spacing: 12,
-                              runSpacing: 8,
-                              children: [
-                                ElevatedButton.icon(
-                                  icon: const Icon(Icons.edit_outlined),
-                                  label: const Text('Edit'),
-                                  onPressed: () {},
-                                ),
-                                OutlinedButton.icon(
-                                  icon: const Icon(Icons.share_outlined),
-                                  label: const Text('Share'),
-                                  onPressed: () {},
-                                ),
-                                TextButton(
-                                  onPressed: () {},
-                                  child: const Text('See analytics'),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: screenSize.height * 0.015),
-                    // Analytics Card
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.all(screenSize.width * 0.04),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Engagement',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            SizedBox(height: screenSize.height * 0.015),
-                            SizedBox(
-                              height: screenSize.height * 0.15,
-                              child: Center(
-                                child: Text(
-                                  'Mini chart placeholder',
-                                  style: TextStyle(color: Colors.grey[400]),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+
+                // ======= Campaign Overview =======
+                _overviewCard(screenSize, context, campaign, start, end),
+                SizedBox(height: screenSize.height * 0.015),
+
+                // ======= Analytics =======
+                _analyticsCard(screenSize),
+
+                SizedBox(height: screenSize.height * 0.03),
+
+                // ======= 🗣️ NEW Community Section =======
+                _communityCard(context, screenSize),
               ],
             ),
           ),
@@ -295,8 +217,143 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
+
+  // ---------------- Helper Widgets ----------------
+
+  Widget _overviewCard(Size screenSize, BuildContext context,
+      Map<String, dynamic> campaign, DateTime start, DateTime end) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: EdgeInsets.all(screenSize.width * 0.04),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Overview', style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: screenSize.height * 0.015),
+            Text(campaign['offer']),
+            SizedBox(height: screenSize.height * 0.015),
+            Row(
+              children: [
+                const Icon(Icons.location_on, size: 18),
+                SizedBox(width: screenSize.width * 0.015),
+                Text('${campaign['radius_km'].toStringAsFixed(1)} km radius'),
+                SizedBox(width: screenSize.width * 0.04),
+                const Icon(Icons.schedule, size: 18),
+                SizedBox(width: screenSize.width * 0.015),
+                Expanded(
+                  child: Text(
+                    '${DateFormat.yMMMd().add_jm().format(start)} → ${DateFormat.yMMMd().add_jm().format(end)}',
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: screenSize.height * 0.02),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              children: [
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.edit_outlined),
+                  label: const Text('Edit'),
+                  onPressed: () {},
+                ),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.share_outlined),
+                  label: const Text('Share'),
+                  onPressed: () {},
+                ),
+                TextButton(
+                  onPressed: () {},
+                  child: const Text('See analytics'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _analyticsCard(Size screenSize) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: EdgeInsets.all(screenSize.width * 0.04),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Engagement',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            SizedBox(height: screenSize.height * 0.015),
+            SizedBox(
+              height: screenSize.height * 0.15,
+              child: Center(
+                child: Text(
+                  'Mini chart placeholder',
+                  style: TextStyle(color: Colors.grey[400]),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _communityCard(BuildContext context, Size screenSize) {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, '/community'),
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 8,
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(screenSize.width * 0.05),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF6A00F8), Color(0xFF7C4DFF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.people_alt_rounded,
+                  color: Colors.white, size: 40),
+              SizedBox(width: screenSize.width * 0.04),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Community Connect',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Join nearby conversations, see reviews, and share your thoughts!',
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded,
+                  color: Colors.white, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
+// ======= Small Stats Card Widget =======
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
