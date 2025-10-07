@@ -1,18 +1,25 @@
 from flask import Flask
 from flask_cors import CORS
-from routes.poster import poster
+from database import db
+from routes.campaign import campaign_bp
+import os
 
 app = Flask(__name__)
-CORS(
-    app,
-    resources={r"/*": {"origins": "*"}},   # ✅ allow all origins
-    supports_credentials=True,             # allow cookies/authorization headers
-    allow_headers="*",                     # ✅ allow all custom headers
-    expose_headers="*",                    # ✅ expose all headers to client
-    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]  # ✅ full set of methods
+CORS(app)
+
+# Postgres DB URL
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL", "sqlite:///campaigns.db"
 )
-# Register blueprints
-app.register_blueprint(poster, url_prefix="/api")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
+app.register_blueprint(campaign_bp, url_prefix="/api/campaigns")
 
 if __name__ == "__main__":
+    os.makedirs(os.getenv("UPLOAD_FOLDER", "uploads"), exist_ok=True)
     app.run(debug=True, port=5000)
