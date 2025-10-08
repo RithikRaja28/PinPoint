@@ -105,24 +105,6 @@ class CampaignApp extends StatelessWidget {
       ),
     );
 
-    // return MaterialApp(
-    //   debugShowCheckedModeBanner: false,
-    //   title: 'Campaign Builder',
-    //   theme: theme,
-    //   routes: {
-    //     '/': (ctx) => const AuthScreen(),
-    //     '/create_campaign': (ctx) => const CreateCampaignScreen(),
-    //     '/dashboard': (ctx) => const DashboardScreen(),
-    //     '/community': (ctx) => const CommunityFeedScreen(),
-    //     '/create_post': (ctx) => const CreatePostScreen(),
-    //     '/phone_auth': (ctx) => PhoneAuthPage(),
-    //     '/customer': (ctx) => CustomerPage(),
-    //     '/colab_request': (ctx) => ColobRequestList(),
-    //     '/shops': (ctx) => const ShopsListScreen(),
-    //   },
-    //   initialRoute: '/',
-    // );
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Campaign Builder',

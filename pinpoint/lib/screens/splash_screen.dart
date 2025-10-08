@@ -37,17 +37,8 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     // Navigate after 3 seconds
-    Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 800),
-          pageBuilder: (_, __, ___) => const RootScreen(),
-          transitionsBuilder: (_, animation, __, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-        ),
-      );
+    Timer(const Duration(seconds: 2), () {
+      Navigator.pushReplacementNamed(context, "/root");
     });
   }
 
