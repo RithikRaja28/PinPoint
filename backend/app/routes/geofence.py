@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify
+
 from ..nokia_client import (
+    get_device_location,
     verify_location_nokia,
     create_geofence_subscription,
     retrieve_geofence_subscription,
@@ -122,7 +124,6 @@ def simswap_retrieve():
 
 
 # Combined Redemption Route (Optional)
-
 @geofence_bp.route("/redeem", methods=["POST"])
 def redeem_offer():
     """
@@ -160,3 +161,25 @@ def redeem_offer():
             "sim_changed": changed,
             "message": f"❌ Redemption Denied: {reason}"
         }), 403
+    
+
+@geofence_bp.route("/location/retrieve", methods=["POST"])
+def retrieve_device_location():
+    """
+    Retrieve the current or last known location of a user's device.
+    Useful for analytics, fraud prevention, or real-time tracking use cases.
+    """
+    data = request.json or {}
+    phone_number = data.get("phone_number", "+99999991000")
+
+    print(f"📍 Retrieving location for: {phone_number}")
+    result = get_device_location(phone_number)
+
+    if "error" in result:
+        return jsonify({"success": False, "error": result["error"]}), 500
+
+    return jsonify({
+        "success": True,
+        "location": result,
+        "message": "✅ Device location retrieved successfully"
+    }), 200
