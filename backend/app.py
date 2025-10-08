@@ -46,48 +46,45 @@ app.register_blueprint(campaign_bp, url_prefix="/api/campaigns")
 app.register_blueprint(poster_bp, url_prefix="/api")
 app.register_blueprint(shop_bp, url_prefix="/shops")
 app.register_blueprint(geofence_bp, url_prefix="/api/geofence")
-app.register_blueprint(fence_logic, url_prefix="/api/geofence/callback")
+# app.register_blueprint(fence_logic, url_prefix="/api/geofence/callback")
 
-------------------------------------------
-🔁 Function to implement geofence setup
-------------------------------------------
-def implement_geofence():
-    print("🚀 Initializing geofencing setup...")
+# def implement_geofence():
+#     print("🚀 Initializing geofencing setup...")
 
-    # 1️⃣ Connect to Postgres manually
-    conn = psycopg2.connect(os.getenv("DATABASE_URL"))
-    cursor = conn.cursor()
+#     # 1️⃣ Connect to Postgres manually
+#     conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+#     cursor = conn.cursor()
 
-    # 2️⃣ Fetch all devices
-    cursor.execute("SELECT uid, phone_number FROM devices;")
-    devices = cursor.fetchall()
-    print(f"📱 Found {len(devices)} devices to process...")
+#     # 2️⃣ Fetch all devices
+#     cursor.execute("SELECT uid, phone_number FROM devices;")
+#     devices = cursor.fetchall()
+#     print(f"📱 Found {len(devices)} devices to process...")
 
-    # 3️⃣ Loop through devices
-    for uid, phone_number in devices:
-        print(f"🔍 Processing device: {uid} ({phone_number})")
+#     # 3️⃣ Loop through devices
+#     for uid, phone_number in devices:
+#         print(f"🔍 Processing device: {uid} ({phone_number})")
 
-        # Retrieve location
-        try:
-            location = get_device_location(phone_number)
-            if "error" in location:
-                print(f"❌ Failed to get location for {phone_number}: {location['error']}")
-                continue
+#         # Retrieve location
+#         try:
+#             location = get_device_location(phone_number)
+#             if "error" in location:
+#                 print(f"❌ Failed to get location for {phone_number}: {location['error']}")
+#                 continue
 
-            lat = location["latitude"]
-            lon = location["longitude"]
-            radius = location.get("radius", 2000)
+#             lat = location["latitude"]
+#             lon = location["longitude"]
+#             radius = location.get("radius", 2000)
 
-            # 4️⃣ Create geofence subscription
-            create_res = create_geofence_subscription(phone_number, lat, lon, radius)
-            print(f"🛰️ Geofence created for {phone_number}: {create_res}")
+#             # 4️⃣ Create geofence subscription
+#             create_res = create_geofence_subscription(phone_number, lat, lon, radius)
+#             print(f"🛰️ Geofence created for {phone_number}: {create_res}")
 
-        except Exception as e:
-            print(f"⚠️ Error processing {phone_number}: {e}")
+#         except Exception as e:
+#             print(f"⚠️ Error processing {phone_number}: {e}")
 
-    cursor.close()
-    conn.close()
-    print("✅ Geofencing setup completed for all devices.")
+#     cursor.close()
+#     conn.close()
+#     print("✅ Geofencing setup completed for all devices.")
 
 
 # ------------------------------------------
@@ -99,7 +96,7 @@ if __name__ == "__main__":
     port = int(os.getenv("FLASK_PORT", "5000"))
 
     # ⚙️ Before starting the app, run geofence setup
-    with app.app_context():
-        implement_geofence()
+    # with app.app_context():
+    #     implement_geofence()
 
     app.run(host=host, port=port, debug=debug_mode)
