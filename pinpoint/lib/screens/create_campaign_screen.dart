@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:pinpoint/globals.dart'; 
 
 class CreateCampaignScreen extends StatefulWidget {
   const CreateCampaignScreen({super.key});
@@ -43,6 +44,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   static const Color textPrimary = Color(0xFF2C1A63);
   static const Color neutralBg = Color(0xFFF5F3FE);
 
+  final List<String> languages = ['en', 'es', 'fr', 'de', 'hi', 'ta'];
+
   bool get _step1Valid =>
       _titleController.text.trim().isNotEmpty &&
       _offerController.text.trim().isNotEmpty;
@@ -69,7 +72,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   void _showSnack(String text, [bool error = false]) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(text),
+        content: translateText(text),
         backgroundColor: error ? Colors.redAccent : brandMid,
         behavior: SnackBarBehavior.floating,
       ),
@@ -290,24 +293,12 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
                       color: brandMid,
                     ),
                   ),
-                  Text(
-                    "${(progress * 100).round()}%",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: textPrimary,
-                    ),
-                  ),
+                  translateText("${(progress * 100).round()}%"),
                 ],
               ),
               const SizedBox(width: 16),
-              Text(
+              translateText(
                 "Step ${_currentStep + 1} of ${labels.length} — ${labels[_currentStep]}",
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: textPrimary,
-                ),
               ),
             ],
           ),
@@ -336,6 +327,33 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     ];
 
     return Scaffold(
+      appBar: AppBar(
+        title: translateText("🎯 Create Campaign"),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        actions: [
+          DropdownButton<String>(
+            value: selectedLang,
+            underline: const SizedBox(),
+            icon: const Icon(Icons.language, color: Colors.deepPurple),
+            dropdownColor: Colors.white,
+            items: languages.map((lang) {
+              return DropdownMenuItem<String>(
+                value: lang,
+                child: Text(
+                  lang.toUpperCase(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) setState(() => selectedLang = value);
+            },
+          ),
+          const SizedBox(width: 10),
+        ],
+      ),
       backgroundColor: neutralBg,
       body: SafeArea(
         child: Column(
@@ -388,17 +406,12 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
           ),
         ],
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.campaign_rounded, color: Colors.white, size: 28),
-          SizedBox(width: 10),
-          Text(
+          const Icon(Icons.campaign_rounded, color: Colors.white, size: 28),
+          const SizedBox(width: 10),
+          translateText(
             "Launch Your Campaign 🚀",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 19,
-              color: Colors.white,
-            ),
           ),
         ],
       ),
@@ -431,13 +444,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
                   ),
                   side: const BorderSide(color: brandMid),
                 ),
-                child: const Text(
-                  "Back",
-                  style: TextStyle(
-                    color: brandMid,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: translateText("Back"),
               ),
             ),
           if (_currentStep > 0) const SizedBox(width: 12),
@@ -462,13 +469,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
                         strokeWidth: 2,
                       ),
                     )
-                  : Text(
+                  : translateText(
                       _currentStep < 3 ? "Next →" : "Launch Campaign 🎯",
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
                     ),
             ),
           ),
@@ -496,9 +498,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+          translateText(title),
           const SizedBox(height: 12),
           ...children,
         ],
@@ -515,9 +515,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style:
-                const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        translateText(label),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -565,7 +563,6 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     }
   }
 
-  // 🧩 Individual Step Cards
   Widget _basicInfoCard() => _cardWrapper("Basic Details", [
         _textInput(
           "Campaign Title",
@@ -577,13 +574,12 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
           "Offer Text",
           _offerController,
           hint: "e.g. Get 20% off on all lattes",
-          maxLines: 4,
+                  maxLines: 4,
         ),
       ]);
 
   Widget _targetingCard() => _cardWrapper("Targeting 🎯", [
-        const Text("Target radius",
-            style: TextStyle(fontWeight: FontWeight.w600)),
+        translateText("Target radius"),
         Slider(
           value: _radiusKm,
           min: 0.5,
@@ -595,10 +591,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
         ),
         Align(
           alignment: Alignment.centerLeft,
-          child: Text(
-            "${_radiusKm.toStringAsFixed(1)} km radius",
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
+          child: translateText("${_radiusKm.toStringAsFixed(1)} km radius"),
         ),
         const SizedBox(height: 12),
         _dateTile(
@@ -629,7 +622,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
               child: OutlinedButton.icon(
                 onPressed: _pickPoster,
                 icon: const Icon(Icons.photo_library_rounded),
-                label: const Text("Upload Poster"),
+                label: translateText("Upload Poster"),
               ),
             ),
             const SizedBox(width: 12),
@@ -647,8 +640,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
                       )
                     : const Icon(Icons.auto_awesome_rounded),
                 label: _generatingPoster
-                    ? const Text("Generating...")
-                    : const Text("Generate AI Poster"),
+                    ? translateText("Generating...")
+                    : translateText("Generate AI Poster"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: brandDark.withOpacity(0.85),
                   foregroundColor: Colors.white,
@@ -675,12 +668,10 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
           ),
         ),
         const SizedBox(height: 10),
-        Text("Radius: ${_radiusKm.toStringAsFixed(1)} km",
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        translateText("Radius: ${_radiusKm.toStringAsFixed(1)} km"),
         const SizedBox(height: 4),
-        Text(
+        translateText(
           "Schedule: ${DateFormat.yMMMd().add_jm().format(_combinedStart)} → ${DateFormat.yMMMd().add_jm().format(_combinedEnd)}",
-          style: const TextStyle(color: Colors.black87),
         ),
         const SizedBox(height: 14),
         _posterPreview(),
@@ -709,13 +700,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
+                  translateText(label),
                   Text(text, style: const TextStyle(color: Colors.black54)),
                 ],
               ),
@@ -727,3 +712,4 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     );
   }
 }
+
