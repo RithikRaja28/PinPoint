@@ -55,8 +55,8 @@ def _save_upload(file_storage, subfolder=""):
     # If you used subfolders, include them in URL.
     rel_path = os.path.join(subfolder, final_name) if subfolder else final_name
     # request.host_url already ends with '/', so rstrip
-    public_url = f"{request.host_url.rstrip('/')}/uploads/{rel_path.replace(os.path.sep, '/')}"
-    return public_url
+    public_url = f"/uploads/{rel_path.replace(os.path.sep, '/')}"
+    return public_url   
 
 
 def geocode_address(address):
@@ -132,6 +132,7 @@ def create_shop():
 
         shop = ShopModel(
             name=name,
+            owner_uid=payload.get("owner_uid"),
             category=payload.get("category"),
             description=payload.get("description"),
             address_line=payload.get("address_line"),

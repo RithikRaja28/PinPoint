@@ -9,10 +9,12 @@ class CampaignModel(db.Model):
     start = db.Column(db.DateTime, nullable=False)
     end = db.Column(db.DateTime, nullable=False)
     poster_path = db.Column(db.String(200), nullable=True)
-
+    owner_uid = db.Column(db.String(128), index=True, nullable=True) 
+    
     def to_dict(self):
         return {
             'id': self.id,
+            'owner_uid': self.owner_uid,
             'title': self.title,
             'offer': self.offer,
             'radius_km': self.radius_km,
