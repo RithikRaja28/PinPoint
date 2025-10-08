@@ -68,11 +68,13 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   }
 
   void _showSnack(String text, [bool error = false]) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(text),
-      backgroundColor: error ? Colors.redAccent : brandMid,
-      behavior: SnackBarBehavior.floating,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(text),
+        backgroundColor: error ? Colors.redAccent : brandMid,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   // --- Navigation ---
@@ -114,9 +116,11 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   void _scrollToTop() {
     Future.delayed(const Duration(milliseconds: 150), () {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(0,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut);
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
       }
     });
   }
@@ -124,8 +128,9 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   // --- Poster ---
   Future<void> _pickPoster() async {
     try {
-      final XFile? picked =
-          await _picker.pickImage(source: ImageSource.gallery);
+      final XFile? picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+      );
       if (picked != null) {
         setState(() => _posterFile = File(picked.path));
         _showSnack("Poster uploaded.");
@@ -147,7 +152,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       request.fields['end'] = _combinedEnd.toIso8601String();
       if (_posterFile != null) {
         request.files.add(
-            await http.MultipartFile.fromPath('logo', _posterFile!.path));
+          await http.MultipartFile.fromPath('logo', _posterFile!.path),
+        );
       }
 
       final response = await request.send();
@@ -168,6 +174,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     }
   }
 
+  // ------------------- Submit Campaign --------------------
+
   // --- Submit ---
   Future<void> _submitCampaign() async {
     setState(() => _isSubmitting = true);
@@ -180,8 +188,9 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       request.fields['start'] = _combinedStart.toIso8601String();
       request.fields['end'] = _combinedEnd.toIso8601String();
       if (_posterFile != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-            'poster', _posterFile!.path));
+        request.files.add(
+          await http.MultipartFile.fromPath('poster', _posterFile!.path),
+        );
       }
       final response = await request.send();
       if (response.statusCode == 201) {
@@ -209,8 +218,10 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       lastDate: now.add(const Duration(days: 365)),
     );
     if (pickedDate != null) {
-      final pickedTime =
-          await showTimePicker(context: context, initialTime: TimeOfDay.now());
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
       if (pickedTime != null) {
         setState(() {
           _startDate = pickedDate;
@@ -229,8 +240,10 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       lastDate: now.add(const Duration(days: 365)),
     );
     if (pickedDate != null) {
-      final pickedTime =
-          await showTimePicker(context: context, initialTime: TimeOfDay.now());
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
       if (pickedTime != null) {
         setState(() {
           _endDate = pickedDate;
@@ -369,20 +382,24 @@ Widget _stepIndicator() {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.deepPurple.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 4))
+            color: Colors.deepPurple.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
       child: Row(
         children: const [
           Icon(Icons.campaign_rounded, color: brandDark, size: 26),
           SizedBox(width: 10),
-          Text("Launch Your Campaign",
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: brandDark)),
+          Text(
+            "Launch Your Campaign",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: brandDark,
+            ),
+          ),
         ],
       ),
     );
@@ -401,11 +418,17 @@ Widget _stepIndicator() {
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   side: const BorderSide(color: brandMid),
                 ),
-                child: const Text("Back",
-                    style: TextStyle(color: brandMid, fontWeight: FontWeight.w600)),
+                child: const Text(
+                  "Back",
+                  style: TextStyle(
+                    color: brandMid,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           if (_currentStep > 0) const SizedBox(width: 12),
@@ -417,20 +440,25 @@ Widget _stepIndicator() {
                 backgroundColor: brandMid,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               child: _isSubmitting
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
                   : Text(
                       _currentStep < 3 ? "Next" : "Launch Campaign",
                       style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold),
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
             ),
           ),
@@ -441,98 +469,113 @@ Widget _stepIndicator() {
 
   // --- Cards ---
   Widget _basicInfoCard() => _cardWrapper("Basic Details", [
-        _textInput("Campaign Title", _titleController,
-            hint: "e.g. Weekend Coffee Special"),
-        const SizedBox(height: 16),
-        _textInput("Offer Text", _offerController,
-            hint: "e.g. Get 20% off on all lattes", maxLines: 4),
-      ]);
+    _textInput(
+      "Campaign Title",
+      _titleController,
+      hint: "e.g. Weekend Coffee Special",
+    ),
+    const SizedBox(height: 16),
+    _textInput(
+      "Offer Text",
+      _offerController,
+      hint: "e.g. Get 20% off on all lattes",
+      maxLines: 4,
+    ),
+  ]);
 
   Widget _targetingCard() => _cardWrapper("Targeting", [
-        const Text("Target radius", style: TextStyle(fontWeight: FontWeight.w600)),
-        Slider(
-          value: _radiusKm,
-          min: 0.5,
-          max: 5.0,
-          divisions: 45,
-          label: "${_radiusKm.toStringAsFixed(1)} km",
-          activeColor: brandMid,
-          onChanged: (v) => setState(() => _radiusKm = v),
-        ),
-        Align(
-            alignment: Alignment.centerLeft,
-            child: Text("${_radiusKm.toStringAsFixed(1)} km radius",
-                style: const TextStyle(fontWeight: FontWeight.w600))),
-        const SizedBox(height: 12),
-        _dateTile(
-          "Start Date & Time",
-          Icons.play_arrow,
-          _startDate != null && _startTime != null
-              ? "${DateFormat.yMMMd().format(_startDate!)}  ${_startTime!.format(context)}"
-              : "Pick start date & time",
-          _pickStartDateTime,
-        ),
-        const SizedBox(height: 10),
-        _dateTile(
-          "End Date & Time",
-          Icons.stop,
-          _endDate != null && _endTime != null
-              ? "${DateFormat.yMMMd().format(_endDate!)}  ${_endTime!.format(context)}"
-              : "Pick end date & time",
-          _pickEndDateTime,
-        ),
-      ]);
+    const Text("Target radius", style: TextStyle(fontWeight: FontWeight.w600)),
+    Slider(
+      value: _radiusKm,
+      min: 0.5,
+      max: 5.0,
+      divisions: 45,
+      label: "${_radiusKm.toStringAsFixed(1)} km",
+      activeColor: brandMid,
+      onChanged: (v) => setState(() => _radiusKm = v),
+    ),
+    Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        "${_radiusKm.toStringAsFixed(1)} km radius",
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+    ),
+    const SizedBox(height: 12),
+    _dateTile(
+      "Start Date & Time",
+      Icons.play_arrow,
+      _startDate != null && _startTime != null
+          ? "${DateFormat.yMMMd().format(_startDate!)}  ${_startTime!.format(context)}"
+          : "Pick start date & time",
+      _pickStartDateTime,
+    ),
+    const SizedBox(height: 10),
+    _dateTile(
+      "End Date & Time",
+      Icons.stop,
+      _endDate != null && _endTime != null
+          ? "${DateFormat.yMMMd().format(_endDate!)}  ${_endTime!.format(context)}"
+          : "Pick end date & time",
+      _pickEndDateTime,
+    ),
+  ]);
 
   Widget _posterCard() => _cardWrapper("Campaign Poster", [
-        _posterPreview(),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _pickPoster,
-                icon: const Icon(Icons.photo),
-                label: const Text("Upload"),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _generatingPoster ? null : _generatePosterDummy,
-                icon: _generatingPoster
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2))
-                    : const Icon(Icons.auto_awesome),
-                label: _generatingPoster
-                    ? const Text("Generating...")
-                    : const Text("Generate AI"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: brandDark.withOpacity(0.85),
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
-          ],
+    _posterPreview(),
+    const SizedBox(height: 16),
+    Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _pickPoster,
+            icon: const Icon(Icons.photo),
+            label: const Text("Upload"),
+          ),
         ),
-      ]);
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _generatingPoster ? null : _generatePosterDummy,
+            icon: _generatingPoster
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.auto_awesome),
+            label: _generatingPoster
+                ? const Text("Generating...")
+                : const Text("Generate AI"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: brandDark.withOpacity(0.85),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    ),
+  ]);
 
   Widget _reviewCard() => _cardWrapper("Review Campaign", [
-        ListTile(
-          title: Text(_titleController.text.isEmpty
-              ? "Untitled Campaign"
-              : _titleController.text),
-          subtitle: Text(_offerController.text),
-        ),
-        Text("Radius: ${_radiusKm.toStringAsFixed(1)} km"),
-        Text(
-          "Schedule: ${DateFormat.yMMMd().add_jm().format(_combinedStart)} → ${DateFormat.yMMMd().add_jm().format(_combinedEnd)}",
-        ),
-        const SizedBox(height: 12),
-        _posterPreview(),
-      ]);
+    ListTile(
+      title: Text(
+        _titleController.text.isEmpty
+            ? "Untitled Campaign"
+            : _titleController.text,
+      ),
+      subtitle: Text(_offerController.text),
+    ),
+    Text("Radius: ${_radiusKm.toStringAsFixed(1)} km"),
+    Text(
+      "Schedule: ${DateFormat.yMMMd().add_jm().format(_combinedStart)} → ${DateFormat.yMMMd().add_jm().format(_combinedEnd)}",
+    ),
+    const SizedBox(height: 12),
+    _posterPreview(),
+  ]);
 
   // --- Reusable Widgets ---
   Widget _cardWrapper(String title, List<Widget> children) {
@@ -546,9 +589,10 @@ Widget _stepIndicator() {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 12),
             ...children,
           ],
@@ -557,13 +601,19 @@ Widget _stepIndicator() {
     );
   }
 
-  Widget _textInput(String label, TextEditingController controller,
-      {String? hint, int maxLines = 1}) {
+  Widget _textInput(
+    String label,
+    TextEditingController controller, {
+    String? hint,
+    int maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -572,8 +622,7 @@ Widget _stepIndicator() {
             hintText: hint,
             filled: true,
             fillColor: Colors.white,
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
               borderSide: const BorderSide(color: brandMid),
               borderRadius: BorderRadius.circular(12),
@@ -585,28 +634,38 @@ Widget _stepIndicator() {
   }
 
   Widget _dateTile(
-      String label, IconData icon, String text, VoidCallback onTap) {
+    String label,
+    IconData icon,
+    String text,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
         decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(10)),
+          color: Colors.white,
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(10),
+        ),
         child: Row(
           children: [
             Icon(icon, color: brandMid),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 13)),
-                    Text(text, style: const TextStyle(color: Colors.black54)),
-                  ]),
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(text, style: const TextStyle(color: Colors.black54)),
+                ],
+              ),
             ),
             const Icon(Icons.edit_calendar, color: Colors.grey),
           ],
