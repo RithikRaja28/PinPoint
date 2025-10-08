@@ -139,7 +139,7 @@ class CampaignApp extends StatelessWidget {
         '/customer': (ctx) => CustomerPage(),
         '/colab_request': (ctx) => ColobRequestList(),
       },
-      initialRoute: '/create_campaign',
+      initialRoute: '/',
     );
   }
 }

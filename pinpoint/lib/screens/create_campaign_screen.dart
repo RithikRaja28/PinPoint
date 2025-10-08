@@ -241,30 +241,77 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   }
 
   // --- Step Indicator ---
-  Widget _stepIndicator() {
-    const labels = ['Basic', 'Target', 'Poster', 'Review'];
-    final progress = (_currentStep + 1) / labels.length;
+ // --- Step Indicator ---
+Widget _stepIndicator() {
+  const labels = ['Basic', 'Target', 'Poster', 'Review'];
+  final progress = (_currentStep + 1) / labels.length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 8,
-            color: brandMid,
-            backgroundColor: Colors.grey.shade200,
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // Step labels row
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(
+          labels.length,
+          (i) => Expanded(
+            child: Column(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  height: 5,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: i <= _currentStep
+                        ? brandMid
+                        : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  labels[i],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: i == _currentStep
+                        ? brandDark
+                        : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 8),
-        Text("${(progress * 100).round()}% complete",
-            style: const TextStyle(
-                color: textPrimary, fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
+      ),
+      const SizedBox(height: 14),
+      // // Progress bar
+      // ClipRRect(
+      //   borderRadius: BorderRadius.circular(8),
+      //   child: LinearProgressIndicator(
+      //     value: progress,
+      //     minHeight: 8,
+      //     color: brandMid,
+      //     backgroundColor: Colors.grey.shade200,
+      //   ),
+      // ),
+      // const SizedBox(height: 10),
+      // Completion status
+      Center(
+        child: Text(
+          "${(progress * 100).round()}% complete",
+          style: const TextStyle(
+            color: textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
 
   // --- UI ---
   @override
