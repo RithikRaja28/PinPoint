@@ -22,3 +22,4 @@ class CampaignModel(db.Model):
             'end': self.end.isoformat(),
             'poster_path': self.poster_path
         }
+ 

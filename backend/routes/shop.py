@@ -6,6 +6,10 @@ from datetime import datetime
 import os
 import requests
 import uuid,time
+from sqlalchemy import text
+from sqlalchemy.exc import ProgrammingError
+import random
+import math
 from werkzeug.utils import secure_filename
 
 
@@ -167,12 +171,17 @@ def get_shop(shop_id):
     return jsonify(shop.to_dict()), 200
 
 
-# Simple proximity search (Haversine) — avoid for large scale; use PostGIS for production.
+
 @shop_bp.route("/nearby", methods=["GET"])
 def nearby_shops():
     """
-    Query params: lat, lon (required), radius_meters (optional, default 1000), limit (optional)
-    Returns shops within radius using Haversine formula in raw SQL.
+    Query params:
+      lat (required), lon (required),
+      radius_meters (optional, default 10000),  -- we default to 10km as requested
+      limit (optional, default 50)
+
+    Returns shops ordered by distance (nearest first) up to radius, plus
+    hasOffer flag if owner_uid has an active campaign.
     """
     try:
         lat = float(request.args.get("lat", None))
@@ -180,41 +189,151 @@ def nearby_shops():
     except Exception:
         return jsonify({"error": "lat and lon query parameters required and must be numeric"}), 400
 
-    radius_m = float(request.args.get("radius_m", 1000))
-    limit = int(request.args.get("limit", 50))
+    # default to 10 km (10000 m)
+    try:
+        radius_m = float(request.args.get("radius_m", 10000))
+    except Exception:
+        radius_m = 10000.0
 
-    # Haversine in meters — earth radius 6371000
-    haversine_sql = f"""
-    SELECT id, name, category, address_line, city, state, postal_code, country, lat, lon,
-      (6371000 * 2 * asin(sqrt(
-        power(sin(radians((COALESCE(lat,0) - :lat)/2)),2) +
-        cos(radians(:lat)) * cos(radians(COALESCE(lat,0))) *
-        power(sin(radians((COALESCE(lon,0) - :lon)/2)),2)
-      ))) AS distance_m
-    FROM shops
-    WHERE lat IS NOT NULL AND lon IS NOT NULL
-    HAVING distance_m <= :radius_m
+    # cap radius to 10 km (safeguard) — you may remove this cap if not desired
+    if radius_m > 10000:
+        radius_m = 10000.0
+
+    try:
+        limit = int(request.args.get("limit", 50))
+    except Exception:
+        limit = 50
+
+    # Prefer PostGIS: use ST_DWithin + ST_Distance for accurate ordering
+    # ST_MakePoint expects (lon, lat)
+    postgis_sql = """
+    SELECT
+      s.id,
+      s.name,
+      s.category,
+      s.description,
+      s.address_line,
+      s.city,
+      s.lat,
+      s.lon,
+      s.avg_spend,
+      s.image_url,
+      -- distance in meters using geography
+      ST_Distance(
+        ST_SetSRID(ST_MakePoint(COALESCE(s.lon,0), COALESCE(s.lat,0)), 4326)::geography,
+        ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography
+      ) AS distance_m,
+      -- whether there exists an active campaign owned by this shop owner
+      EXISTS (
+        SELECT 1 FROM campaigns c
+        WHERE c.owner_uid IS NOT NULL
+          AND c.owner_uid = s.owner_uid
+          AND c.start <= now() AT TIME ZONE 'utc'
+          AND c.end >= now() AT TIME ZONE 'utc'
+      ) AS has_offer
+    FROM shops s
+    WHERE s.lat IS NOT NULL AND s.lon IS NOT NULL
+      AND ST_DWithin(
+        ST_SetSRID(ST_MakePoint(COALESCE(s.lon,0), COALESCE(s.lat,0)), 4326)::geography,
+        ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
+        :radius_m
+      )
     ORDER BY distance_m ASC
     LIMIT :limit
     """
 
-    # Use SQLAlchemy text() for raw query
-    from sqlalchemy import text
-    q = db.session.execute(text(haversine_sql), {"lat": lat, "lon": lon, "radius_m": radius_m, "limit": limit})
-    rows = q.fetchall()
+    try:
+        q = db.session.execute(
+            text(postgis_sql),
+            {"lat": lat, "lon": lon, "radius_m": radius_m, "limit": limit},
+        )
+        rows = q.fetchall()
+    except ProgrammingError as pe:
+        # PostGIS functions missing (or syntax error). Fall back to Haversine SQL.
+        current_app.logger.warning("PostGIS query failed, falling back to Haversine: %s", pe)
+
+        # Haversine (meters) — earth radius 6371000
+        haversine_sql = """
+        SELECT
+          s.id,
+          s.name,
+          s.category,
+          s.description,
+          s.address_line,
+          s.city,
+          s.lat,
+          s.lon,
+          s.avg_spend,
+          s.image_url,
+          (6371000 * 2 * asin(sqrt(
+            power(sin(radians((COALESCE(s.lat,0) - :lat)/2)),2) +
+            cos(radians(:lat)) * cos(radians(COALESCE(s.lat,0))) *
+            power(sin(radians((COALESCE(s.lon,0) - :lon)/2)),2)
+          ))) AS distance_m,
+          EXISTS (
+            SELECT 1 FROM campaigns c
+            WHERE c.owner_uid IS NOT NULL
+              AND c.owner_uid = s.owner_uid
+              AND c.start <= now() AT TIME ZONE 'utc'
+              AND c.end >= now() AT TIME ZONE 'utc'
+          ) AS has_offer
+        FROM shops s
+        WHERE s.lat IS NOT NULL AND s.lon IS NOT NULL
+        HAVING distance_m <= :radius_m
+        ORDER BY distance_m ASC
+        LIMIT :limit
+        """
+        q = db.session.execute(
+            text(haversine_sql),
+            {"lat": lat, "lon": lon, "radius_m": radius_m, "limit": limit},
+        )
+        rows = q.fetchall()
+    except Exception as e:
+        current_app.logger.exception("Error running nearby query: %s", e)
+        return jsonify({"error": "Internal server error"}), 500
+
+    # Build response — match frontend Shop model
     results = []
     for r in rows:
+        # rows may be sqlalchemy RowProxy — access by column name
+        # handle missing columns gracefully
+        sid = getattr(r, "id", None)
+        name = getattr(r, "name", None)
+        category = getattr(r, "category", None)
+        lat_val = getattr(r, "lat", None)
+        lon_val = getattr(r, "lon", None)
+        avg_spend = getattr(r, "avg_spend", None)
+        image_url = getattr(r, "image_url", None)
+        description = getattr(r, "description", None) or ""
+        distance_m = getattr(r, "distance_m", None)
+        has_offer = getattr(r, "has_offer", False)
+
+        # normalize numeric types
+        try:
+            distance_m_f = float(distance_m) if distance_m is not None else None
+        except Exception:
+            distance_m_f = None
+
+        try:
+            avg_spend_f = float(avg_spend) if avg_spend is not None else None
+        except Exception:
+            avg_spend_f = None
+
+        # Randomize rating (between 3.5 and 5.0, one decimal)
+        rating = round(random.uniform(3.5, 5.0), 1)
+
         results.append({
-            "id": r.id,
-            "name": r.name,
-            "category": r.category,
-            "address_line": r.address_line,
-            "city": r.city,
-            "state": r.state,
-            "postal_code": r.postal_code,
-            "country": r.country,
-            "lat": float(r.lat) if r.lat is not None else None,
-            "lon": float(r.lon) if r.lon is not None else None,
-            "distance_m": float(r.distance_m)
+            "id": sid,
+            "name": name,
+            "category": category,
+            "lat": float(lat_val) if lat_val is not None else None,
+            "lon": float(lon_val) if lon_val is not None else None,
+            "avgSpend": avg_spend_f,
+            "hasOffer": bool(has_offer),
+            "distanceMeters": distance_m_f,
+            "snippet": description,      # frontend expects snippet -> use description
+            "imageUrl": image_url,
+            "rating": rating,
         })
+
     return jsonify({"count": len(results), "shops": results}), 200
