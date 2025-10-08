@@ -141,7 +141,7 @@ def poster_create():
             browser.close()
 
         # ✅ Wait to ensure file is written to disk
-        time.sleep(0.3)
+        time.sleep(2)
         if not os.path.exists(poster_path):
             return jsonify({"error": "Poster not found after generation"}), 500
 

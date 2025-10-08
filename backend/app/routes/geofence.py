@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify
+
 from ..nokia_client import (
+    get_device_location,
     verify_location_nokia,
     create_geofence_subscription,
     retrieve_geofence_subscription,
@@ -8,10 +10,244 @@ from ..nokia_client import (
     check_sim_swap,
     retrieve_sim_swap_date
 )
-
+import os
+import requests
+import json
 geofence_bp = Blueprint("geofence", __name__)
 
 # Verify Device Location (Existing)
+
+NOKIA_BASE_URL = os.getenv("NOKIA_BASE_URL")
+NOKIA_RAPIDAPI_KEY = os.getenv("NOKIA_RAPIDAPI_KEY")
+NOKIA_RAPIDAPI_HOST = os.getenv("NOKIA_RAPIDAPI_HOST")
+
+HEADERS = {
+    "Content-Type": "application/json",
+    "X-RapidAPI-Key": NOKIA_RAPIDAPI_KEY,
+    "X-RapidAPI-Host": NOKIA_RAPIDAPI_HOST
+}
+
+# ✅ Updated function to send correct payload
+def get_device_location(device_payload: dict):
+    """
+    Retrieve the current or last known location of a device from Nokia Network-as-Code.
+    """
+    url = f"{NOKIA_BASE_URL}/location-retrieval/v0/retrieve"
+
+    try:
+        print("📤 Sending payload to Nokia API:", json.dumps(device_payload, indent=2))
+
+        res = requests.post(
+            url,
+            data=json.dumps(device_payload),
+            headers=HEADERS,
+            timeout=15
+        )
+
+        print("📡 Nokia API Response:", res.status_code, res.text)
+
+        # ✅ Handle successful response
+        if res.status_code == 200:
+            data = res.json()
+
+            # Since the API returns directly (not inside "location")
+            area = data.get("area", {}) or {}
+            center = area.get("center", {}) or {}
+
+            return {
+                "lastLocationTime": data.get("lastLocationTime"),
+                "latitude": center.get("latitude"),
+                "longitude": center.get("longitude"),
+                "radius": area.get("radius"),
+                "areaType": area.get("areaType"),
+            }
+
+        # ❌ Any other status code = error
+        return {
+            "error": f"Unexpected response: {res.status_code} - {res.text}"
+        }
+
+    except Exception as e:
+        print("❌ Error retrieving device location:", e)
+        return {"error": str(e)}
+    
+@geofence_bp.route("/device/status/subscribe", methods=["POST"])
+def subscribe_device_status():
+    """
+    Subscribe to notifications for device status changes.
+    Only the phone number comes from frontend; everything else is fixed.
+    """
+    if not request.is_json:
+        return jsonify({
+            "success": False,
+            "error": "Request content type must be application/json"
+        }), 415
+
+    data = request.get_json()
+    phone_number = data.get("phoneNumber")  # frontend sends only this
+
+    if not phone_number:
+        return jsonify({
+            "success": False,
+            "error": "Missing phoneNumber"
+        }), 400
+
+    # Fixed subscription payload
+    payload = {
+        "subscriptionDetail": {
+            "device": {"phoneNumber": phone_number},
+            "type": "org.camaraproject.device-status.v0.roaming-status"
+        },
+        "subscriptionExpireTime": "2026-01-17T13:18:23.682Z",
+        "webhook": {
+            "notificationUrl": "https://application-server.com",
+            "notificationAuthToken": "c8974e592c2fa383d4a3960714"
+        }
+    }
+
+    url = f"{NOKIA_BASE_URL}/device-status/v0/subscriptions"
+
+    try:
+        res = requests.post(url, data=json.dumps(payload), headers=HEADERS, timeout=15)
+        print("📡 Device Status Subscription Response:", res.status_code, res.text)
+
+        if res.status_code in [200, 201]:
+            return jsonify({"success": True, "subscription": res.json()}), 200
+        else:
+            return jsonify({"success": False, "error": f"Unexpected response: {res.status_code} - {res.text}"}), 500
+
+    except Exception as e:
+        print("❌ Error creating device status subscription:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@geofence_bp.route("/device/status/connectivity", methods=["POST"])
+def get_device_connectivity_status():
+    """
+    Get the connectivity status of a mobile device.
+    Returns one of: CONNECTED_SMS, CONNECTED_DATA, NOT_CONNECTED
+    """
+    if not request.is_json:
+        return jsonify({
+            "success": False,
+            "error": "Request content type must be application/json"
+        }), 415
+
+    data = request.get_json()
+    print("📍 Received request data for connectivity:", json.dumps(data, indent=2))
+
+    # Validate phone number
+    phone_number = data.get("device", {}).get("phoneNumber")
+    if not phone_number:
+        return jsonify({"success": False, "error": "Missing device.phoneNumber"}), 400
+
+    url = f"{NOKIA_BASE_URL}/device-status/v0/connectivity"
+    payload = {"device": {"phoneNumber": phone_number}}
+
+    try:
+        res = requests.post(url, data=json.dumps(payload), headers=HEADERS, timeout=15)
+        print("📡 Connectivity API Response:", res.status_code, res.text)
+
+        if res.status_code == 200:
+            return jsonify({"success": True, "connectivityStatus": res.json().get("connectivityStatus")}), 200
+        else:
+            return jsonify({"success": False, "error": f"Unexpected response: {res.status_code} - {res.text}"}), 500
+
+    except Exception as e:
+        print("❌ Error getting device connectivity status:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# Retrieve Device Location
+@geofence_bp.route("/location/retrieve", methods=["POST"])
+def retrieve_location_and_status():
+    if not request.is_json:
+        return jsonify({
+            "success": False,
+            "error": "Request content type must be application/json",
+            "hint": "Add 'Content-Type: application/json' in your request headers."
+        }), 415
+
+    data = request.get_json()
+    print("📍 Received request data:", json.dumps(data, indent=2))
+
+    if "device" not in data or "phoneNumber" not in data["device"]:
+        return jsonify({
+            "success": False,
+            "error": "Invalid payload. Must include device.phoneNumber."
+        }), 400
+
+    phone_number = data["device"]["phoneNumber"]
+
+    # 1️⃣ Get device location
+    location_result = get_device_location(data)
+    if "error" in location_result:
+        print("❌ Location retrieval failed:", location_result["error"])
+        return jsonify({
+            "success": False,
+            "error": location_result["error"]
+        }), 500
+
+    # 2️⃣ Subscribe device status
+    subscription_payload = {
+        "subscriptionDetail": {
+            "device": {"phoneNumber": phone_number},
+            "type": "org.camaraproject.device-status.v0.roaming-status"
+        },
+        "subscriptionExpireTime": "2026-01-17T13:18:23.682Z",
+        "webhook": {
+            "notificationUrl": "https://application-server.com",
+            "notificationAuthToken": "c8974e592c2fa383d4a3960714"
+        }
+    }
+
+    print("📤 Subscription API Payload:", json.dumps(subscription_payload, indent=2))
+
+    subscription_url = f"{NOKIA_BASE_URL}/device-status/v0/subscriptions"
+    try:
+        sub_res = requests.post(subscription_url, data=json.dumps(subscription_payload), headers=HEADERS, timeout=15)
+        print("📡 Device Status Subscription Response Code:", sub_res.status_code)
+        print("📡 Device Status Subscription Response Body:", sub_res.text)
+        subscription_success = sub_res.status_code in [200, 201]
+        subscription_result = sub_res.json() if subscription_success else {"error": f"Unexpected response: {sub_res.status_code} - {sub_res.text}"}
+    except Exception as e:
+        subscription_result = {"error": str(e)}
+        subscription_success = False
+        print("❌ Subscription API Exception:", e)
+
+    # 3️⃣ Get device connectivity status
+    status_payload = {
+        "device": {"phoneNumber": phone_number}
+    }
+    status_url = f"{NOKIA_BASE_URL}/device-status/v0/connectivity"
+
+    print("📤 Connectivity Status API Payload:", json.dumps(status_payload, indent=2))
+
+    try:
+        status_res = requests.post(status_url, data=json.dumps(status_payload), headers=HEADERS, timeout=15)
+        print("📡 Device Status Response Code:", status_res.status_code)
+        print("📡 Device Status Response Body:", status_res.text)
+        status_success = status_res.status_code in [200, 201]
+        status_result = status_res.json() if status_success else {"error": f"Unexpected response: {status_res.status_code} - {status_res.text}"}
+    except Exception as e:
+        status_result = {"error": str(e)}
+        status_success = False
+        print("❌ Device Status API Exception:", e)
+
+    # ✅ Return combined response
+    return jsonify({
+        "success": True,
+        "location": location_result,
+        "subscription": {
+            "success": subscription_success,
+            "data": subscription_result
+        },
+        "device_status": {
+            "success": status_success,
+            "data": status_result
+        },
+        "message": "✅ Device location retrieved, subscription processed, and device status fetched."
+    }), 200
+
 
 @geofence_bp.route("/trigger", methods=["POST"])
 def trigger_geofence():
@@ -122,7 +358,6 @@ def simswap_retrieve():
 
 
 # Combined Redemption Route (Optional)
-
 @geofence_bp.route("/redeem", methods=["POST"])
 def redeem_offer():
     """
@@ -160,3 +395,25 @@ def redeem_offer():
             "sim_changed": changed,
             "message": f"❌ Redemption Denied: {reason}"
         }), 403
+    
+
+@geofence_bp.route("/location/retrieve", methods=["POST"])
+def retrieve_device_location():
+    """
+    Retrieve the current or last known location of a user's device.
+    Useful for analytics, fraud prevention, or real-time tracking use cases.
+    """
+    data = request.json or {}
+    phone_number = data.get("phone_number", "+99999991000")
+
+    print(f"📍 Retrieving location for: {phone_number}")
+    result = get_device_location(phone_number)
+
+    if "error" in result:
+        return jsonify({"success": False, "error": result["error"]}), 500
+
+    return jsonify({
+        "success": True,
+        "location": result,
+        "message": "✅ Device location retrieved successfully"
+    }), 200
