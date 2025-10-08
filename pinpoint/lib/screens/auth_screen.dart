@@ -503,7 +503,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       // --- create shop record in your Postgres backend ---
       try {
         // Build multipart request
-        final uri = Uri.parse('http://192.168.1.9:5000/shops/');
+        final uri = Uri.parse('http://10.82.69.61:5000/shops/');
         final req = http.MultipartRequest('POST', uri);
 
         // required/primary fields

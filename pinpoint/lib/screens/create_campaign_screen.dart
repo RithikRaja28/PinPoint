@@ -141,7 +141,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   Future<void> _generatePosterDummy() async {
     setState(() => _generatingPoster = true);
     try {
-      final uri = Uri.parse("http://192.168.1.9:5000/api/poster");
+      final uri = Uri.parse("http://10.82.69.61:5000/api/poster");
       final request = http.MultipartRequest('POST', uri);
       request.fields['shop_name'] = _titleController.text.trim();
       request.fields['offer'] = _offerController.text.trim();
@@ -176,7 +176,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     final user = FirebaseAuth.instance.currentUser;
 
     try {
-      final uri = Uri.parse('http://192.168.1.9:5000/api/campaigns/');
+      final uri = Uri.parse('http://10.82.69.61:5000/api/campaigns/');
       final request = http.MultipartRequest('POST', uri);
 
       if (user != null) request.fields['owner_uid'] = user.uid;
@@ -546,7 +546,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.network(
-          "http://192.168.1.9:5000" + _posterUrl!,
+          "http://10.82.69.61:5000" + _posterUrl!,
           height: height,
           fit: BoxFit.cover,
         ),
