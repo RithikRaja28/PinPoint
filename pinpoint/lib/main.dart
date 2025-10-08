@@ -120,8 +120,9 @@ class CampaignApp extends StatelessWidget {
         '/phone_auth': (ctx) => PhoneAuthPage(),
         '/customer': (ctx) => CustomerPage(),
         '/colab_request': (ctx) => ColobRequestList(),
+        '/shops': (ctx) => const ShopsListScreen(),
       },
-      initialRoute: '/create_campaign',
+      initialRoute: '/',
     );
   }
 }
