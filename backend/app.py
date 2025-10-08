@@ -1,4 +1,4 @@
-# app.py — cleaned version
+from app.routes.geofence import geofence_bp
 import os
 from flask import Flask, send_from_directory
 from flask_cors import CORS
@@ -45,6 +45,7 @@ def serve_upload(filename):
 app.register_blueprint(campaign_bp, url_prefix="/api/campaigns")
 app.register_blueprint(poster_bp, url_prefix="/api")
 app.register_blueprint(shop_bp, url_prefix="/shops")
+app.register_blueprint(geofence_bp,url_prefix="/api/geofence")
 
 # Print URL map for debugging (inside app context so it has access to routes)
 with app.app_context():
