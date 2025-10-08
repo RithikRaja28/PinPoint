@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:pinpoint/screens/business/business_profile.dart';
 import 'package:pinpoint/screens/collab_request_list.dart';
 import 'package:pinpoint/screens/community_feed_screen.dart';
 import 'package:pinpoint/screens/create_campaign_screen.dart';
 import 'package:pinpoint/screens/dashboard_screen.dart';
-import 'package:pinpoint/screens/customer_screen.dart';
 import 'package:pinpoint/globals.dart';
 import 'package:pinpoint/user_model.dart';
 
@@ -18,12 +18,19 @@ class DashboardNavBar extends StatefulWidget {
 class _DashboardNavBarState extends State<DashboardNavBar> {
   int _selectedIndex = 0;
 
-  final _pages = const [
-    DashboardScreen(),
-    CreateCampaignScreen(),
-    CommunityFeedScreen(),
-    ColobRequestList(),
-  ];
+  late List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = const [
+      DashboardScreen(),
+      CreateCampaignScreen(),
+      CommunityFeedScreen(),
+      ColobRequestList(),
+      BusinessProfile(), // 👈 Added profile page as tab
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,8 +60,11 @@ class _DashboardNavBarState extends State<DashboardNavBar> {
                   // ---- App Logo + Name ----
                   Row(
                     children: const [
-                      Icon(Icons.location_on_rounded,
-                          color: Colors.white, size: 28),
+                      Icon(
+                        Icons.location_on_rounded,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         "PinPoint",
@@ -74,11 +84,9 @@ class _DashboardNavBarState extends State<DashboardNavBar> {
                       if (user != null)
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const CustomerPage()),
-                            );
+                            setState(
+                              () => _selectedIndex = 4,
+                            ); // 👈 Navigate to Profile tab
                           },
                           child: CircleAvatar(
                             radius: 18,
@@ -88,8 +96,9 @@ class _DashboardNavBarState extends State<DashboardNavBar> {
                                   ? user.name[0].toUpperCase()
                                   : "?",
                               style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -101,8 +110,9 @@ class _DashboardNavBarState extends State<DashboardNavBar> {
                           await FirebaseAuth.instance.signOut();
                           currentUser = null;
                           if (context.mounted) {
-                            Navigator.of(context)
-                                .pushNamedAndRemoveUntil('/', (r) => false);
+                            Navigator.of(
+                              context,
+                            ).pushNamedAndRemoveUntil('/', (r) => false);
                           }
                         },
                       ),
@@ -140,24 +150,24 @@ class _DashboardNavBarState extends State<DashboardNavBar> {
           borderRadius: BorderRadius.circular(25),
           child: NavigationBarTheme(
             data: NavigationBarThemeData(
-              indicatorColor: Colors.transparent, // ✅ No globe hover
+              indicatorColor: Colors.transparent,
               backgroundColor: Colors.transparent,
-              labelTextStyle: MaterialStateProperty.resolveWith<TextStyle>(
-                (states) {
-                  if (states.contains(MaterialState.selected)) {
-                    return const TextStyle(
-                      color: Colors.white, // ✅ White for selected
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    );
-                  }
+              labelTextStyle: MaterialStateProperty.resolveWith<TextStyle>((
+                states,
+              ) {
+                if (states.contains(MaterialState.selected)) {
                   return const TextStyle(
-                    color: Colors.white, // ✅ White for unselected too
-                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
                     fontSize: 12,
                   );
-                },
-              ),
+                }
+                return const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                );
+              }),
             ),
             child: NavigationBar(
               height: 65,
@@ -166,10 +176,36 @@ class _DashboardNavBarState extends State<DashboardNavBar> {
               onDestinationSelected: (i) => setState(() => _selectedIndex = i),
               labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
               destinations: [
-                _buildNavItem(Icons.dashboard_outlined, Icons.dashboard, "Dashboard", 0),
-                _buildNavItem(Icons.campaign_outlined, Icons.campaign, "Campaigns", 1),
-                _buildNavItem(Icons.people_alt_outlined, Icons.people, "Community", 2),
-                _buildNavItem(Icons.person_outline, Icons.person, "Requests", 3),
+                _buildNavItem(
+                  Icons.dashboard_outlined,
+                  Icons.dashboard,
+                  "Dashboard",
+                  0,
+                ),
+                _buildNavItem(
+                  Icons.campaign_outlined,
+                  Icons.campaign,
+                  "Campaigns",
+                  1,
+                ),
+                _buildNavItem(
+                  Icons.people_alt_outlined,
+                  Icons.people,
+                  "Community",
+                  2,
+                ),
+                _buildNavItem(
+                  Icons.person_outline,
+                  Icons.person,
+                  "Requests",
+                  3,
+                ),
+                _buildNavItem(
+                  Icons.business_center,
+                  Icons.business,
+                  "Profile",
+                  4,
+                ), // 👈 New profile tab
               ],
             ),
           ),
@@ -180,7 +216,11 @@ class _DashboardNavBarState extends State<DashboardNavBar> {
 
   // ---------- NAV ITEM BUILDER ----------
   NavigationDestination _buildNavItem(
-      IconData icon, IconData selectedIcon, String label, int index) {
+    IconData icon,
+    IconData selectedIcon,
+    String label,
+    int index,
+  ) {
     final bool isSelected = _selectedIndex == index;
 
     return NavigationDestination(
@@ -189,9 +229,7 @@ class _DashboardNavBarState extends State<DashboardNavBar> {
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isSelected
-              ? const Color(0xFF4B00C8) // ✅ Solid darker hover background
-              : Colors.transparent,
+          color: isSelected ? const Color(0xFF4B00C8) : Colors.transparent,
         ),
         child: Icon(
           isSelected ? selectedIcon : icon,
