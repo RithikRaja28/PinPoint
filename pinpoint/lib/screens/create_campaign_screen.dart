@@ -149,7 +149,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     setState(() => _generatingPoster = true);
 
     try {
-      final uri = Uri.parse("http://10.0.2.2:5000/api/poster");
+      final uri = Uri.parse("http://192.168.1.9:5000/api/poster");
       final request = http.MultipartRequest('POST', uri);
 
       // ✅ Required fields
@@ -180,7 +180,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = json.decode(respStr);
         setState(() {
-          _posterUrl = "http://10.0.2.2:5000${data['poster_url']}";
+          _posterUrl = "http://192.168.1.9:5000${data['poster_url']}";
         });
         _showSnack("✅ AI Poster Generated!");
         print("Poster URL: $_posterUrl");
@@ -195,13 +195,11 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     }
   }
 
-
-
   // ------------------- Submit Campaign --------------------
   Future<void> _submitCampaign() async {
     setState(() => _isSubmitting = true);
     try {
-      final uri = Uri.parse('http://10.0.2.2:5000/api/campaigns/');
+      final uri = Uri.parse('http://192.168.1.9:5000/api/campaigns/');
       final request = http.MultipartRequest('POST', uri);
       request.fields['title'] = _titleController.text.trim();
       request.fields['offer'] = _offerController.text.trim();

@@ -1,16 +1,63 @@
 # blueprints/shop.py
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app,url_for
 from database import db
 from models.shop_model import ShopModel
 from datetime import datetime
 import os
 import requests
+import uuid,time
+from werkzeug.utils import secure_filename
+
 
 shop_bp = Blueprint("shop", __name__)
 
 # Optional: provider selection via env (GOOGLE_MAPS or MAPBOX or NOKIA)
 MAP_PROVIDER = os.getenv("MAP_PROVIDER", "GOOGLE")  # "GOOGLE" | "MAPBOX" | "NOKIA"
 MAPS_API_KEY = os.getenv("MAPS_API_KEY", "")
+
+ALLOWED_IMAGE_EXT = {"png", "jpg", "jpeg", "gif", "webp"}
+
+def _allowed_file(filename):
+    if not filename:
+        return False
+    ext = filename.rsplit(".", 1)[-1].lower()
+    return ext in ALLOWED_IMAGE_EXT
+
+def _save_upload(file_storage, subfolder=""):
+    """
+    Save a werkzeug FileStorage to UPLOAD_FOLDER and return the public URL path.
+    Returns the final filename (relative) or None on failure.
+    """
+    if file_storage is None or file_storage.filename == "":
+        return None
+
+    if not _allowed_file(file_storage.filename):
+        current_app.logger.warning("Rejected file with disallowed extension: %s", file_storage.filename)
+        return None
+
+    uploads_dir = current_app.config.get("UPLOAD_FOLDER", "uploads")
+    # optionally create subfolder under uploads
+    target_dir = os.path.join(uploads_dir, subfolder) if subfolder else uploads_dir
+    os.makedirs(target_dir, exist_ok=True)
+
+    filename = secure_filename(file_storage.filename)
+    # prefix with timestamp + uuid to avoid collisions
+    prefix = f"{int(time.time())}-{uuid.uuid4().hex[:8]}"
+    final_name = f"{prefix}-{filename}"
+    final_path = os.path.join(target_dir, final_name)
+    try:
+        file_storage.save(final_path)
+    except Exception as e:
+        current_app.logger.exception("Failed to save uploaded file: %s", e)
+        return None
+
+    # Build a public URL to the uploads route. Using request.host_url + /uploads/<filename>
+    # If you used subfolders, include them in URL.
+    rel_path = os.path.join(subfolder, final_name) if subfolder else final_name
+    # request.host_url already ends with '/', so rstrip
+    public_url = f"{request.host_url.rstrip('/')}/uploads/{rel_path.replace(os.path.sep, '/')}"
+    return public_url
+
 
 def geocode_address(address):
     """
@@ -49,10 +96,39 @@ def geocode_address(address):
 @shop_bp.route("/", methods=["POST"])
 def create_shop():
     try:
-        payload = request.get_json(silent=True) or request.form.to_dict()
+        # Prefer form data for multipart/form-data (files + fields)
+        if request.content_type and request.content_type.startswith("application/json"):
+            # If client sent JSON, this still works
+            payload = request.get_json(silent=True) or {}
+        else:
+            payload = request.form.to_dict() or {}
+
         name = payload.get("name")
         if not name:
             return jsonify({"error": "Shop name is required"}), 400
+
+        # Handle uploaded files (image, logo)
+        image_url = None
+        logo_url = None
+
+        # 'image' and 'logo' are the field names your Flutter code uses
+        if 'image' in request.files:
+            image_file = request.files.get('image')
+            saved = _save_upload(image_file)
+            if saved:
+                image_url = saved
+
+        if 'logo' in request.files:
+            logo_file = request.files.get('logo')
+            saved = _save_upload(logo_file)
+            if saved:
+                logo_url = saved
+
+        # Allow clients to optionally pass direct image_url/logo_url as fallback
+        if not image_url and payload.get("image_url"):
+            image_url = payload.get("image_url")
+        if not logo_url and payload.get("logo_url"):
+            logo_url = payload.get("logo_url")
 
         shop = ShopModel(
             name=name,
@@ -65,9 +141,9 @@ def create_shop():
             registration_no=payload.get("registration_no"),
             contact_number=payload.get("contact_number"),
             avg_spend=float(payload.get("avg_spend")) if payload.get("avg_spend") else None,
-            has_offer=bool(payload.get("has_offer")) if payload.get("has_offer") else False,
-            image_url=payload.get("image_url"),
-            logo_url=payload.get("logo_url"),
+            has_offer=(payload.get("has_offer") in ("1", "true", "True", True)) if payload.get("has_offer") else False,
+            image_url=image_url,
+            logo_url=logo_url,
         )
 
         db.session.add(shop)
@@ -77,7 +153,12 @@ def create_shop():
 
     except Exception as e:
         db.session.rollback()
+        current_app.logger.exception("Failed to create shop: %s", e)
         return jsonify({"error": str(e)}), 500
+
+@shop_bp.route("/test", methods=["GET"])
+def test():
+    return "Working!"
 
 @shop_bp.route("/<int:shop_id>", methods=["GET"])
 def get_shop(shop_id):

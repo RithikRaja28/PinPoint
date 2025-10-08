@@ -1,4 +1,5 @@
 // auth_screen.dart
+import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -8,6 +9,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pinpoint/globals.dart';
 import 'package:pinpoint/user_model.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 enum AuthMode { login, signup }
 
@@ -24,6 +28,40 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   AuthMode _authMode = AuthMode.login;
 
   final _formKey = GlobalKey<FormState>();
+
+  // grouped categories
+  final Map<String, List<String>> _categoryGroups = {
+    'Food & Beverage': [
+      'Restaurant',
+      'Cafe',
+      'Bakery',
+      'Juice Center',
+      'Street Food',
+    ],
+    'Retail': ['Clothing', 'Electronics', 'Grocery', 'Jewellery', 'Bookstore'],
+    'Services': ['Salon / Spa', 'Laundry', 'Repair & Maintenance', 'Tailor'],
+    'Health & Wellness': ['Pharmacy', 'Clinic', 'Fitness Center'],
+    'Entertainment': ['Movie Theatre', 'Gaming Zone', 'Event Space'],
+    'Others': ['Other'],
+  };
+
+  // selected group & subcategory
+  String? _selectedCategoryGroup;
+  String? _selectedSubcategory;
+
+  // registration number
+  final _registrationController = TextEditingController();
+
+  // avg spend
+  final _avgSpendController = TextEditingController();
+
+  // image picker
+  final ImagePicker _imagePicker = ImagePicker();
+  File? _shopImageFile;
+  File? _logoFile; // kept but you mentioned logo not required; harmless to keep
+
+  // backend API base (update to your backend)
+  static const String BACKEND_BASE = 'https://your-backend.example.com';
 
   // Controllers
   final _nameController = TextEditingController();
@@ -302,37 +340,40 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     _otpController.dispose();
     _shopNameController.dispose();
     _shopContactController.dispose();
+    _registrationController.dispose();
+    _avgSpendController.dispose();
+    _addressController.dispose();
+    _cityController.dispose();
+    _districtController.dispose();
+    _descriptionController.dispose();
 
     super.dispose();
   }
 
+  Future<void> _pickImage(bool isLogo) async {
+    try {
+      final XFile? picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 80,
+      );
+      if (picked == null) return;
+      setState(() {
+        if (isLogo) {
+          _logoFile = File(picked.path);
+        } else {
+          _shopImageFile = File(picked.path);
+        }
+      });
+      _showSnack("${isLogo ? 'Logo' : 'Image'} selected");
+    } catch (e) {
+      _showSnack("Failed to pick image: $e");
+    }
+  }
+
   void _showSnack(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-
-  // void _sendOtp() {
-  //   if (_phoneController.text.trim().length < 10) {
-  //     _showSnack("Enter a valid number");
-  //     return;
-  //   }
-  //   setState(() => _loading = true);
-  //   Future.delayed(const Duration(seconds: 2), () {
-  //     setState(() {
-  //       _loading = false;
-  //       _otpSent = true;
-  //       _generatedOtp = "1234";
-  //     });
-  //     _showSnack("OTP sent: $_generatedOtp (demo)");
-  //   });
-  // }
-
-  // void _verifyOtp() {
-  //   if (_otpController.text.trim() == _generatedOtp) {
-  //     _showSnack("OTP verified!");
-  //     Navigator.pushReplacementNamed(context, '/dashboard');
-  //   } else {
-  //     _showSnack("Invalid OTP");
-  //   }
-  // }
 
   Future<void> _pickShopLocation() async {
     final LatLng? result = await Navigator.push(
@@ -395,11 +436,57 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           : 'users';
 
       print("${collectionName} jjjjjjj");
+
+      // 1) Write base user/store document to Firestore (existing behaviour)
       await FirebaseFirestore.instance
           .collection(collectionName)
           .doc(uid)
           .set(userModel.toMap());
 
+      // 2) Create/merge extended shop fields into Firestore (so Firestore contains complete shop info)
+      final chosenCategory = _selectedSubcategory ?? _selectedCategoryGroup;
+      double? avgSpendDouble;
+      if (_avgSpendController.text.trim().isNotEmpty) {
+        avgSpendDouble = double.tryParse(_avgSpendController.text.trim());
+      }
+
+      final Map<String, dynamic> shopExtra = {};
+
+      if (_selectedUserType == UserType.business) {
+        if (chosenCategory != null && chosenCategory.trim().isNotEmpty) {
+          shopExtra['category'] = chosenCategory;
+        }
+        if (_registrationController.text.trim().isNotEmpty) {
+          shopExtra['registration_no'] = _registrationController.text
+              .trim()
+              .toUpperCase();
+        }
+        if (_shopContactController.text.trim().isNotEmpty) {
+          shopExtra['shopContact'] = _shopContactController.text.trim();
+        }
+        if (avgSpendDouble != null) shopExtra['avg_spend'] = avgSpendDouble;
+        if (_descriptionController.text.trim().isNotEmpty)
+          shopExtra['description'] = _descriptionController.text.trim();
+        if (_addressController.text.trim().isNotEmpty)
+          shopExtra['address'] = _addressController.text.trim();
+
+        // store location as map for Firestore usage
+        if (_shopLocation != null) {
+          shopExtra['shopLocation'] = {
+            'lat': _shopLocation!.latitude,
+            'lng': _shopLocation!.longitude,
+          };
+        }
+      }
+
+      if (shopExtra.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection(collectionName)
+            .doc(uid)
+            .set(shopExtra, SetOptions(merge: true));
+      }
+
+      // 3) collabs / cities (existing behaviour)
       await FirebaseFirestore.instance.collection("collabs").doc(uid).set({
         'shops': [],
       });
@@ -410,6 +497,118 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           .set({
             'shops': FieldValue.arrayUnion([uid]),
           }, SetOptions(merge: true));
+
+      // --- create shop record in your Postgres backend ---
+      try {
+        // Build multipart request
+        final uri = Uri.parse('http://192.168.1.9:5000/shops/');
+        final req = http.MultipartRequest('POST', uri);
+
+        // required/primary fields
+        req.fields['name'] = _shopNameController.text.trim();
+        req.fields['address_line'] = _addressController.text.trim();
+        req.fields['city'] = _cityController.text.trim();
+
+        // category: prefer subcategory, fallback to group
+        if (chosenCategory != null && chosenCategory.trim().isNotEmpty) {
+          req.fields['category'] = chosenCategory;
+        }
+
+        if (_registrationController.text.trim().isNotEmpty) {
+          req.fields['registration_no'] = _registrationController.text
+              .trim()
+              .toUpperCase();
+        }
+        if (_shopContactController.text.trim().isNotEmpty) {
+          req.fields['contact_number'] = _shopContactController.text.trim();
+        }
+        if (avgSpendDouble != null) {
+          req.fields['avg_spend'] = avgSpendDouble.toString();
+        }
+
+        // owner link — helpful to connect postgres <-> firebase
+        req.fields['owner_uid'] = uid;
+
+        if (_descriptionController.text.trim().isNotEmpty) {
+          req.fields['description'] = _descriptionController.text.trim();
+        }
+
+        // location (lat/lon)
+        if (_shopLocation != null) {
+          req.fields['lat'] = _shopLocation!.latitude.toString();
+          req.fields['lon'] = _shopLocation!.longitude.toString();
+        }
+
+        // optionally attach images (shop image). logo is optional & kept for backward compatibility.
+        if (_shopImageFile != null) {
+          final img = await http.MultipartFile.fromPath(
+            'image',
+            _shopImageFile!.path,
+          );
+          req.files.add(img);
+        }
+        if (_logoFile != null) {
+          final logo = await http.MultipartFile.fromPath(
+            'logo',
+            _logoFile!.path,
+          );
+          req.files.add(logo);
+        }
+
+        final streamed = await req.send();
+        final resp = await http.Response.fromStream(streamed);
+
+        if (resp.statusCode == 201 || resp.statusCode == 200) {
+          // success: backend returns created shop JSON (best-effort parse)
+          _showSnack('Shop registered on backend');
+          print('Shop backend resp: ${resp.body}');
+
+          // try to merge returned useful fields into Firestore (id, image_url, logo_url)
+          try {
+            final Map<String, dynamic> parsed =
+                jsonDecode(resp.body) as Map<String, dynamic>;
+
+            // common patterns: {"id":..., "image_url": "..."} or {"shop": {...}}
+            final Map<String, dynamic> backendShop = parsed.containsKey('shop')
+                ? (parsed['shop'] as Map<String, dynamic>)
+                : parsed;
+
+            final Map<String, dynamic> backendUpdates = <String, dynamic>{};
+
+            if (backendShop.containsKey('id')) {
+              backendUpdates['backend_id'] = backendShop['id'];
+            }
+            if (backendShop.containsKey('image_url')) {
+              backendUpdates['image_url'] = backendShop['image_url'];
+            } else if (backendShop.containsKey('image')) {
+              backendUpdates['image_url'] = backendShop['image'];
+            }
+            if (backendShop.containsKey('logo_url')) {
+              backendUpdates['logo_url'] = backendShop['logo_url'];
+            } else if (backendShop.containsKey('logo')) {
+              backendUpdates['logo_url'] = backendShop['logo'];
+            }
+
+            if (backendUpdates.isNotEmpty) {
+              await FirebaseFirestore.instance
+                  .collection(collectionName)
+                  .doc(uid)
+                  .set(backendUpdates, SetOptions(merge: true));
+            }
+          } catch (e) {
+            // if parsing fails, ignore — not critical
+            print('Could not parse backend response JSON: $e');
+          }
+        } else {
+          // non-fatal: backend failed; keep going but notify
+          _showSnack('Shop backend returned ${resp.statusCode}');
+          print('Backend error: ${resp.statusCode} ${resp.body}');
+        }
+      } catch (e) {
+        // do not block signup on backend failure
+        print('Failed to create shop in backend: $e');
+        _showSnack('Could not register shop to server (demo)');
+      }
 
       _showSnack("Signup successful for ${_selectedUserType.name}");
       await Future.delayed(const Duration(milliseconds: 500));
@@ -1087,9 +1286,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
             const SizedBox(height: 12),
             _buildInput(
               controller: _shopContactController,
-              label: "Shop contact",
+              label: "Shop contact No",
             ),
-            const SizedBox(height: 12),
             const SizedBox(height: 12),
             _buildInput(controller: _addressController, label: "Full Address"),
             const SizedBox(height: 12),
@@ -1098,7 +1296,8 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
               label: "Description",
             ),
             const SizedBox(height: 12),
-            // shop location with animated state
+
+            // shop location picker (compact row)
             GestureDetector(
               onTap: _pickShopLocation,
               child: AnimatedContainer(
@@ -1148,7 +1347,117 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
+
+            const SizedBox(height: 12),
+
+            // Category group (primary) & subcategory
+            Text("Category", style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedCategoryGroup,
+                  hint: const Text("Select category group"),
+                  isExpanded: true,
+                  items: _categoryGroups.keys
+                      .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                      .toList(),
+                  onChanged: (v) {
+                    setState(() {
+                      _selectedCategoryGroup = v;
+                      _selectedSubcategory = null;
+                    });
+                  },
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            if (_selectedCategoryGroup != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedSubcategory,
+                    hint: const Text("Select subcategory (optional)"),
+                    isExpanded: true,
+                    items: (_categoryGroups[_selectedCategoryGroup] ?? [])
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (v) => setState(() => _selectedSubcategory = v),
+                  ),
+                ),
+              ),
+
+            const SizedBox(height: 12),
+
+            // Registration number
+            _buildInput(
+              controller: _registrationController,
+              label: "Registration No (GST/shop id)",
+            ),
+
+            const SizedBox(height: 12),
+
+            // Avg spend
+            _glassField(
+              child: TextFormField(
+                controller: _avgSpendController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: "Avg. spend (₹)",
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 12,
+                  ),
+                ),
+                validator: (val) {
+                  if (val == null || val.trim().isEmpty) return null;
+                  final n = double.tryParse(val);
+                  if (n == null || n < 0) return "Enter valid amount";
+                  return null;
+                },
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Single Image picker (shop image)
+            OutlinedButton.icon(
+              onPressed: () => _pickImage(false),
+              icon: const Icon(Icons.photo),
+              label: Text(
+                _shopImageFile == null ? "Upload shop image" : "Change image",
+              ),
+            ),
+
+            if (_shopImageFile != null) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  _shopImageFile!,
+                  height: 80,
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ],
           ],
+
           const SizedBox(height: 18),
           _primaryButton(label: "Sign Up", onPressed: _submitSignup),
         ],
