@@ -24,274 +24,256 @@ class DashboardScreen extends StatelessWidget {
     final end = DateTime.parse(campaign['end']);
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: const Color(0xFFF5F3FE),
       appBar: AppBar(
-        title: const Text("Campaigns"),
-        elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black87,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          "Campaign Dashboard",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            letterSpacing: 0.6,
+            color: Color(0xFF2C1A63),
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline),
+            icon: const Icon(Icons.add_circle_outline,
+                color: Color(0xFF6A00F8), size: 28),
+            tooltip: 'Create campaign',
             onPressed: () =>
                 Navigator.of(context).pushReplacementNamed('/create_campaign'),
-            tooltip: 'Create campaign',
           ),
         ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: screenSize.width * 0.04,
-              vertical: screenSize.height * 0.02,
-            ),
-            child: Column(
-              children: [
-                // ======= Header / Hero =======
-                Hero(
-                  tag: 'campaign-header',
-                  child: Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(screenSize.width * 0.04),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFEDF2FF), Color(0xFFF7F3FF)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: screenSize.width * 0.15,
-                          height: screenSize.width * 0.15,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            color: Colors.white,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black12,
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.campaign_outlined,
-                            color: Color(0xFF6A00F8),
-                            size: 34,
-                          ),
-                        ),
-                        SizedBox(width: screenSize.width * 0.04),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Recent Campaign',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyLarge
-                                    ?.copyWith(color: Colors.grey[700]),
-                              ),
-                              SizedBox(height: screenSize.height * 0.005),
-                              Text(
-                                campaign['title'],
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: screenSize.height * 0.002),
-                              Text(
-                                '${campaign['offer']} • ${campaign['radius_km'].toStringAsFixed(1)} km',
-                                style: TextStyle(color: Colors.grey[600]),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Chip(
-                              label: const Text('Active'),
-                              backgroundColor: Colors.green[50],
-                              labelStyle: const TextStyle(color: Colors.green),
-                            ),
-                            SizedBox(height: screenSize.height * 0.005),
-                            Text(
-                              '${DateFormat.yMMMd().format(start)} → ${DateFormat.yMMMd().format(end)}',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(height: screenSize.height * 0.025),
-
-                // ======= Quick Stats Row =======
-                Row(
-                  children: [
-                    _StatCard(title: 'Impressions', value: '1.2k'),
-                    SizedBox(width: screenSize.width * 0.03),
-                    _StatCard(title: 'Clicks', value: '312'),
-                    SizedBox(width: screenSize.width * 0.03),
-                    Expanded(
-                      child: Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: screenSize.width * 0.03,
-                            vertical: screenSize.height * 0.015,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Budget'),
-                              SizedBox(height: screenSize.height * 0.008),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  const Text(
-                                    '₹ 3,200',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Spent • 48%',
-                                    style: TextStyle(color: Colors.grey[600]),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: screenSize.height * 0.008),
-                              LinearProgressIndicator(
-                                value: 0.48,
-                                backgroundColor: Colors.grey[200],
-                                color: const Color(0xFF7C4DFF),
-                                minHeight: 6,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: screenSize.height * 0.025),
-
-                // ======= Campaign Overview =======
-                _overviewCard(screenSize, context, campaign, start, end),
-                SizedBox(height: screenSize.height * 0.015),
-
-                // ======= Analytics =======
-                _analyticsCard(screenSize),
-
-                SizedBox(height: screenSize.height * 0.03),
-
-                // ======= 🗣️ NEW Community Section =======
-                _communityCard(context, screenSize),
-              ],
-            ),
+          padding: EdgeInsets.symmetric(
+            horizontal: screenSize.width * 0.04,
+            vertical: screenSize.height * 0.02,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _headerCard(screenSize, campaign, start, end, context),
+              const SizedBox(height: 25),
+              _horizontalScrollStats(screenSize),
+              const SizedBox(height: 25),
+              _overviewCard(screenSize, context, campaign, start, end),
+              const SizedBox(height: 25),
+              _analyticsCard(screenSize),
+              const SizedBox(height: 25),
+              _communityCard(context, screenSize),
+            ],
           ),
         ),
       ),
     );
   }
 
-  // ---------------- Helper Widgets ----------------
+  // ====== Header with Neon Active Badge ======
+  Widget _headerCard(Size screenSize, Map<String, dynamic> campaign,
+      DateTime start, DateTime end, BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(screenSize.width * 0.05),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF7C4DFF), Color(0xFF9C4DFF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurple.withOpacity(0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: screenSize.width * 0.17,
+            height: screenSize.width * 0.17,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.campaign_rounded,
+                color: Colors.white, size: 40),
+          ),
+          SizedBox(width: screenSize.width * 0.05),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Recent Campaign",
+                    style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 13,
+                        letterSpacing: 0.3)),
+                const SizedBox(height: 4),
+                Text(campaign['title'],
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold)),
+                Text('${campaign['offer']} • ${campaign['radius_km']} km',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              ],
+            ),
+          ),
+          _neonBadge("ACTIVE"),
+        ],
+      ),
+    );
+  }
 
+  // Neon Active Badge
+  Widget _neonBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00E676), Color(0xFF69F0AE)],
+        ),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.greenAccent.withOpacity(0.6),
+            blurRadius: 12,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.8,
+        ),
+      ),
+    );
+  }
+
+  // ====== Scrollable Stats ======
+  Widget _horizontalScrollStats(Size screenSize) {
+    final stats = [
+      {'title': 'Impressions', 'value': '1.2k', 'icon': Icons.remove_red_eye},
+      {'title': 'Clicks', 'value': '312', 'icon': Icons.touch_app},
+      {'title': 'Conversions', 'value': '68', 'icon': Icons.trending_up},
+      {'title': 'Budget Spent', 'value': '48%', 'icon': Icons.account_balance},
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: stats
+            .map(
+              (s) => _HoverCard(
+                width: screenSize.width * 0.45,
+                title: s['title'].toString(),
+                value: s['value'].toString(),
+                icon: s['icon'] as IconData,
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  // ====== Overview Card with Stylish Buttons ======
   Widget _overviewCard(Size screenSize, BuildContext context,
       Map<String, dynamic> campaign, DateTime start, DateTime end) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return _HoverCardContainer(
       child: Padding(
-        padding: EdgeInsets.all(screenSize.width * 0.04),
+        padding: EdgeInsets.all(screenSize.width * 0.05),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Overview', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: screenSize.height * 0.015),
-            Text(campaign['offer']),
-            SizedBox(height: screenSize.height * 0.015),
+            const Text('Overview',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    color: Color(0xFF2C1A63))),
+            const SizedBox(height: 10),
+            Text(campaign['offer'], style: const TextStyle(fontSize: 15)),
+            const SizedBox(height: 14),
             Row(
               children: [
-                const Icon(Icons.location_on, size: 18),
-                SizedBox(width: screenSize.width * 0.015),
-                Text('${campaign['radius_km'].toStringAsFixed(1)} km radius'),
-                SizedBox(width: screenSize.width * 0.04),
-                const Icon(Icons.schedule, size: 18),
-                SizedBox(width: screenSize.width * 0.015),
+                const Icon(Icons.location_on, color: Colors.purple, size: 18),
+                const SizedBox(width: 6),
+                Text('${campaign['radius_km']} km radius'),
+                const SizedBox(width: 16),
+                const Icon(Icons.schedule, color: Colors.indigo, size: 18),
+                const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
-                    '${DateFormat.yMMMd().add_jm().format(start)} → ${DateFormat.yMMMd().add_jm().format(end)}',
-                  ),
-                ),
+                    child: Text(
+                        '${DateFormat.yMMMd().add_jm().format(start)} → ${DateFormat.yMMMd().add_jm().format(end)}',
+                        style: const TextStyle(fontSize: 13))),
               ],
             ),
-            SizedBox(height: screenSize.height * 0.02),
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
+            const SizedBox(height: 18),
+            Row(
               children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.edit_outlined),
-                  label: const Text('Edit'),
-                  onPressed: () {},
+                _glossyButton(
+                  text: "Edit",
+                  icon: Icons.edit,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6A00F8), Color(0xFF7E57C2)],
+                  ),
+                  onTap: () {},
                 ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.share_outlined),
-                  label: const Text('Share'),
-                  onPressed: () {},
+                const SizedBox(width: 10),
+                _glossyButton(
+                  text: "Share",
+                  icon: Icons.share_outlined,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF9C4DFF), Color(0xFFCE93D8)],
+                  ),
+                  onTap: () {},
                 ),
-                TextButton(
-                  onPressed: () {},
-                  child: const Text('See analytics'),
-                ),
+                const SizedBox(width: 10),
+                _glassButton("Analytics", onTap: () {}),
               ],
-            ),
+            )
           ],
         ),
       ),
     );
   }
 
+  // ====== Analytics Card ======
   Widget _analyticsCard(Size screenSize) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return _HoverCardContainer(
       child: Padding(
-        padding: EdgeInsets.all(screenSize.width * 0.04),
+        padding: EdgeInsets.all(screenSize.width * 0.05),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Engagement',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: screenSize.height * 0.015),
-            SizedBox(
-              height: screenSize.height * 0.15,
-              child: Center(
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                    color: Color(0xFF2C1A63))),
+            const SizedBox(height: 15),
+            Container(
+              height: screenSize.height * 0.18,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFF3E5F5), Color(0xFFEDE7F6)],
+                ),
+              ),
+              child: const Center(
                 child: Text(
-                  'Mini chart placeholder',
-                  style: TextStyle(color: Colors.grey[400]),
+                  '📊 Engagement Insights Coming Soon',
+                  style: TextStyle(color: Colors.grey),
                 ),
               ),
             ),
@@ -301,90 +283,208 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
+  // ====== Community Section ======
   Widget _communityCard(BuildContext context, Size screenSize) {
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, '/community'),
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        elevation: 8,
-        child: Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(screenSize.width * 0.05),
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xFF6A00F8), Color(0xFF7C4DFF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.all(Radius.circular(16)),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF6A00F8), Color(0xFF9C4DFF)],
           ),
-          child: Row(
-            children: [
-              const Icon(Icons.people_alt_rounded,
-                  color: Colors.white, size: 40),
-              SizedBox(width: screenSize.width * 0.04),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Community Connect',
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.deepPurple.withOpacity(0.25),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            )
+          ],
+        ),
+        padding: EdgeInsets.all(screenSize.width * 0.06),
+        child: Row(
+          children: [
+            const Icon(Icons.people_alt_rounded, color: Colors.white, size: 44),
+            SizedBox(width: screenSize.width * 0.05),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text('Community Connect',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      'Join nearby conversations, see reviews, and share your thoughts!',
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
-                  ],
-                ),
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                  SizedBox(height: 6),
+                  Text(
+                    'Join local campaigns, share insights, and connect!',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ],
               ),
-              const Icon(Icons.arrow_forward_ios_rounded,
-                  color: Colors.white, size: 18),
-            ],
-          ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                color: Colors.white, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ====== Glossy Gradient Buttons ======
+  Widget _glossyButton({
+    required String text,
+    required IconData icon,
+    required Gradient gradient,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.deepPurple.withOpacity(0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              text,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _glassButton(String text, {required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Ink(
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.5),
+          border: Border.all(color: const Color(0xFF6A00F8), width: 1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        child: Text(
+          text,
+          style: const TextStyle(color: Color(0xFF6A00F8), fontSize: 14),
         ),
       ),
     );
   }
 }
 
-// ======= Small Stats Card Widget =======
-class _StatCard extends StatelessWidget {
+// ======= Hover Card for Stats =======
+class _HoverCard extends StatefulWidget {
   final String title;
   final String value;
-  const _StatCard({required this.title, required this.value});
+  final IconData icon;
+  final double width;
+  const _HoverCard(
+      {required this.title,
+      required this.value,
+      required this.icon,
+      required this.width});
+
+  @override
+  State<_HoverCard> createState() => _HoverCardState();
+}
+
+class _HoverCardState extends State<_HoverCard> {
+  bool _hover = false;
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    return Expanded(
-      child: Card(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            vertical: screenSize.height * 0.015,
-            horizontal: screenSize.width * 0.03,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: TextStyle(color: Colors.grey[600])),
-              SizedBox(height: screenSize.height * 0.008),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        margin: const EdgeInsets.only(right: 12),
+        width: widget.width,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: _hover
+                  ? Colors.deepPurple.withOpacity(0.25)
+                  : Colors.black12.withOpacity(0.05),
+              blurRadius: _hover ? 14 : 6,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(widget.icon,
+                color: const Color(0xFF6A00F8),
+                size: _hover ? 30 : 26),
+            const SizedBox(height: 8),
+            Text(widget.value,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Color(0xFF2C1A63))),
+            Text(widget.title,
+                style: const TextStyle(color: Colors.grey, fontSize: 13)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ======= Hover Container =======
+class _HoverCardContainer extends StatefulWidget {
+  final Widget child;
+  const _HoverCardContainer({required this.child});
+
+  @override
+  State<_HoverCardContainer> createState() => _HoverCardContainerState();
+}
+
+class _HoverCardContainerState extends State<_HoverCardContainer> {
+  bool _hover = false;
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: _hover
+                  ? Colors.deepPurple.withOpacity(0.2)
+                  : Colors.black12.withOpacity(0.05),
+              blurRadius: _hover ? 18 : 8,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: widget.child,
       ),
     );
   }
