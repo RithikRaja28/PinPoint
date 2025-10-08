@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:pinpoint/globals.dart'; // 🟢 Import for translateText and selectedLang
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final List<String> languages = ['en', 'es', 'fr', 'de', 'hi', 'ta'];
 
   @override
   Widget build(BuildContext context) {
@@ -30,25 +38,29 @@ class DashboardScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "📊 Campaign Dashboard",
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 22,
-            color: Color(0xFF3B1A73),
-          ),
-        ),
+        title: translateText("📊 Campaign Dashboard"), // 🟢 Translated title
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: IconButton(
-              icon: const Icon(Icons.add_circle_rounded,
-                  color: Color(0xFF6A00F8), size: 30),
-              tooltip: 'Create campaign',
-              onPressed: () =>
-                  Navigator.of(context).pushReplacementNamed('/create_campaign'),
-            ),
+          DropdownButton<String>(
+            value: selectedLang,
+            underline: const SizedBox(),
+            icon: const Icon(Icons.language, color: Colors.deepPurple),
+            dropdownColor: Colors.white,
+            items: languages.map((lang) {
+              return DropdownMenuItem<String>(
+                value: lang,
+                child: Text(
+                  lang.toUpperCase(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => selectedLang = value);
+              }
+            },
           ),
+          const SizedBox(width: 10),
         ],
       ),
       body: Container(
@@ -116,25 +128,22 @@ class DashboardScreen extends StatelessWidget {
               color: Colors.white.withOpacity(0.25),
               borderRadius: BorderRadius.circular(18),
             ),
-            child:
-                const Icon(Icons.campaign, color: Colors.white, size: 42),
+            child: const Icon(Icons.campaign, color: Colors.white, size: 42),
           ),
           SizedBox(width: screenSize.width * 0.05),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Recent Campaign",
-                    style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        letterSpacing: 0.4)),
+                translateText("Recent Campaign"),
                 const SizedBox(height: 6),
-                Text(campaign['title'],
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold)),
+                Text(
+                  campaign['title'],
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold),
+                ),
                 Text('${campaign['offer']} • ${campaign['radius_km']} km',
                     style: const TextStyle(color: Colors.white70, fontSize: 14)),
               ],
@@ -146,7 +155,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // SOFTER ACTIVE BADGE (GLASS EFFECT)
+  // ACTIVE BADGE
   Widget _softActiveBadge(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -167,21 +176,13 @@ class DashboardScreen extends StatelessWidget {
         children: [
           const Icon(Icons.circle, size: 10, color: Colors.white),
           const SizedBox(width: 6),
-          Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              fontSize: 13,
-            ),
-          ),
+          translateText(text),
         ],
       ),
     );
   }
 
-  // HORIZONTAL SCROLLABLE STATS
+  // STATS CARDS
   Widget _horizontalScrollStats(Size screenSize) {
     final stats = [
       {'title': 'Impressions', 'value': '1.2k', 'icon': Icons.remove_red_eye},
@@ -216,11 +217,7 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('📌 Overview',
-                style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                    color: Color(0xFF311B92))),
+            translateText('📌 Overview'),
             const SizedBox(height: 10),
             Text(campaign['offer'],
                 style: const TextStyle(fontSize: 15, color: Colors.black87)),
@@ -229,7 +226,7 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.location_on, color: Colors.deepPurple, size: 18),
                 const SizedBox(width: 6),
-                Text('${campaign['radius_km']} km radius'),
+                translateText('${campaign['radius_km']} km radius'),
                 const SizedBox(width: 16),
                 const Icon(Icons.schedule, color: Colors.indigo, size: 18),
                 const SizedBox(width: 6),
@@ -245,21 +242,19 @@ class DashboardScreen extends StatelessWidget {
               runSpacing: 10,
               children: [
                 _glossyButton(
-                  text: "Edit",
-                  icon: Icons.edit,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6A00F8), Color(0xFF9575CD)],
-                  ),
-                  onTap: () {},
-                ),
+                    text: "Edit",
+                    icon: Icons.edit,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6A00F8), Color(0xFF9575CD)],
+                    ),
+                    onTap: () {}),
                 _glossyButton(
-                  text: "Share",
-                  icon: Icons.share_outlined,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFAB47BC), Color(0xFFE1BEE7)],
-                  ),
-                  onTap: () {},
-                ),
+                    text: "Share",
+                    icon: Icons.share_outlined,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFAB47BC), Color(0xFFE1BEE7)],
+                    ),
+                    onTap: () {}),
                 _glassButton("Analytics", onTap: () {}),
               ],
             )
@@ -277,11 +272,7 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('📈 Engagement Insights',
-                style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 18,
-                    color: Color(0xFF2C1A63))),
+            translateText('📈 Engagement Insights'),
             const SizedBox(height: 15),
             Container(
               height: screenSize.height * 0.18,
@@ -291,12 +282,7 @@ class DashboardScreen extends StatelessWidget {
                   colors: [Color(0xFFF3E5F5), Color(0xFFEDE7F6)],
                 ),
               ),
-              child: const Center(
-                child: Text(
-                  'Coming Soon 🚀',
-                  style: TextStyle(color: Colors.grey, fontSize: 15),
-                ),
-              ),
+              child: Center(child: translateText('Coming Soon 🚀')),
             ),
           ],
         ),
@@ -333,17 +319,11 @@ class DashboardScreen extends StatelessWidget {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Community Connect',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold)),
-                  SizedBox(height: 6),
-                  Text(
-                    'Join local campaigns, share insights, and grow together!',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
+                children: [
+                  translateText('Community Connect'),
+                  const SizedBox(height: 6),
+                  translateText(
+                      'Join local campaigns, share insights, and grow together!'),
                 ],
               ),
             ),
@@ -383,10 +363,7 @@ class DashboardScreen extends StatelessWidget {
           children: [
             Icon(icon, color: Colors.white, size: 18),
             const SizedBox(width: 6),
-            Text(
-              text,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-            ),
+            translateText(text),
           ],
         ),
       ),
@@ -404,10 +381,7 @@ class DashboardScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        child: Text(
-          text,
-          style: const TextStyle(color: Color(0xFF6A00F8), fontSize: 14),
-        ),
+        child: translateText(text),
       ),
     );
   }
@@ -466,8 +440,7 @@ class _HoverCardState extends State<_HoverCard> {
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                     color: Color(0xFF2C1A63))),
-            Text(widget.title,
-                style: const TextStyle(color: Colors.grey, fontSize: 13)),
+            translateText(widget.title),
           ],
         ),
       ),
@@ -475,7 +448,7 @@ class _HoverCardState extends State<_HoverCard> {
   }
 }
 
-// ======= Hover Container for Cards =======
+// ======= Hover Container =======
 class _HoverCardContainer extends StatefulWidget {
   final Widget child;
   const _HoverCardContainer({required this.child});
