@@ -11,7 +11,7 @@ from ..nokia_client import (
 import os
 import requests
 import json
-geofence_bp = Blueprint("geofence", _name_)
+geofence_bp = Blueprint("geofence", __name__)
 
 # Verify Device Location (Existing)
 
