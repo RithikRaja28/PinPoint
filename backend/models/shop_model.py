@@ -5,6 +5,7 @@ class ShopModel(db.Model):
     __tablename__ = "shops"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    owner_uid = db.Column(db.String(128), index=True, nullable=True)
     name = db.Column(db.String(180), nullable=False, index=True)
     category = db.Column(db.String(80), nullable=True)
     description = db.Column(db.Text, nullable=True)
@@ -30,6 +31,7 @@ class ShopModel(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
+            "owner_uid": self.owner_uid,
             "name": self.name,
             "category": self.category,
             "description": self.description,
