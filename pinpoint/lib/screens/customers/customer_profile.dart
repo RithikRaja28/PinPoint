@@ -12,110 +12,84 @@ class CustomerProfile extends StatefulWidget {
 
 class _CustomerProfileState extends State<CustomerProfile> {
   String _selectedPreference = 'Fashion';
-  final List<String> _preferences = [
-    'Fashion',
-    'Learning',
-    'Fitness',
-    'Others',
-  ];
-
-  Widget _buildInfoTile(IconData icon, String label, String value) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Colors.deepPurple.shade50,
-          child: Icon(icon, color: Colors.deepPurple[400]),
-        ),
-        title: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-        ),
-        subtitle: Text(
-          value.isNotEmpty ? value : 'Not provided',
-          style: const TextStyle(fontSize: 14, color: Colors.black87),
-        ),
-      ),
-    );
-  }
+  final List<String> _preferences = ['Fashion', 'Learning', 'Fitness', 'Others'];
 
   @override
   Widget build(BuildContext context) {
     final user = currentUser;
-
     if (user == null) {
       return const Center(child: Text("No user data found"));
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: const Color(0xFFFDFDFE),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 🌈 Soft Gradient Header
+              // ================= HEADER =================
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 40),
+                padding: const EdgeInsets.only(top: 60, bottom: 40),
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFFD6C3FF), Color(0xFFE9E4FF)],
+                    colors: [Color(0xFFF5F3FF), Color(0xFFFAF9FF)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.vertical(
-                    bottom: Radius.circular(45),
+                    bottom: Radius.circular(40),
                   ),
                 ),
                 child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.white,
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.deepPurple.shade100,
+                            blurRadius: 15,
+                            spreadRadius: 3,
+                          )
+                        ],
+                      ),
                       child: CircleAvatar(
                         radius: 55,
-                        backgroundColor: Colors.deepPurple[100],
-                        child: Text(
-                          user.name.isNotEmpty
-                              ? user.name[0].toUpperCase()
-                              : "?",
-                          style: const TextStyle(
-                            fontSize: 42,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
+                        backgroundColor: Colors.white,
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: const Color(0xFFE6E1FF),
+                          child: Text(
+                            user.name.isNotEmpty
+                                ? user.name[0].toUpperCase()
+                                : "?",
+                            style: const TextStyle(
+                              fontSize: 42,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF7265E3),
+                            ),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      "Hello, ${user.name} 👋",
+                      user.name,
                       style: const TextStyle(
                         fontSize: 26,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         color: Colors.black87,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
-                      "Glad to see you back!",
+                      "Welcome back 👋",
                       style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[800],
-                        fontWeight: FontWeight.w400,
+                        fontSize: 15,
+                        color: Colors.grey[700],
                       ),
                     ),
                   ],
@@ -124,69 +98,36 @@ class _CustomerProfileState extends State<CustomerProfile> {
 
               const SizedBox(height: 30),
 
-              // 📋 Personal Info Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "👤 Personal Information",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.deepPurple[400],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
+              // ================= PERSONAL INFO =================
+              _sectionTitle(Icons.person_outline_rounded, "Personal Information"),
+              const SizedBox(height: 10),
 
-              _buildInfoTile(LineIcons.envelope, "Email", user.email),
-              _buildInfoTile(LineIcons.phone, "Phone", user.phone),
+              _buildInfoCard(Icons.email_outlined, "Email", user.email),
+              _buildInfoCard(Icons.phone_android_rounded, "Phone", user.phone),
               if (user.city != null)
-                _buildInfoTile(LineIcons.city, "City", user.city!),
+                _buildInfoCard(Icons.location_city_rounded, "City", user.city!),
               if (user.address != null)
-                _buildInfoTile(LineIcons.mapMarker, "Address", user.address!),
+                _buildInfoCard(Icons.map_rounded, "Address", user.address!),
               if (user.district != null)
-                _buildInfoTile(
-                  LineIcons.locationArrow,
-                  "District",
-                  user.district!,
-                ),
+                _buildInfoCard(Icons.place_outlined, "District", user.district!),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 28),
 
-              // 🎯 Ad Preferences Section
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "✨ Ad Preferences",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.deepPurple[400],
-                    ),
-                  ),
-                ),
-              ),
+              // ================= AD PREFERENCES =================
+              _sectionTitle(Icons.tune_rounded, "Ad Preferences"),
               const SizedBox(height: 12),
 
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
+                margin: const EdgeInsets.symmetric(horizontal: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: Colors.grey.withOpacity(0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -195,62 +136,61 @@ class _CustomerProfileState extends State<CustomerProfile> {
                     border: InputBorder.none,
                     labelText: "Select your preference",
                     labelStyle: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w500,
+                      color: Colors.black87,
                     ),
                   ),
                   value: _selectedPreference,
                   items: _preferences
-                      .map(
-                        (pref) => DropdownMenuItem(
-                          value: pref,
-                          child: Text(
-                            pref,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      )
+                      .map((pref) => DropdownMenuItem(
+                            value: pref,
+                            child: Text(
+                              pref,
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ))
                       .toList(),
                   onChanged: (val) {
                     setState(() => _selectedPreference = val!);
                   },
-                  icon: Icon(
-                    Icons.keyboard_arrow_down,
-                    color: Colors.deepPurple[400],
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Color(0xFF7265E3),
                   ),
+                  dropdownColor: Colors.white,
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 50),
 
-              // 🚪 Sign Out Button
+              // ================= SIGN OUT =================
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 60),
                 child: SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton(
                     onPressed: () async {
                       await FirebaseAuth.instance.signOut();
                       currentUser = null;
-                      Navigator.of(
-                        context,
-                      ).pushNamedAndRemoveUntil('/', (route) => false);
+                      Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/', (route) => false);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple[400],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      backgroundColor: const Color(0xFFF4F1FF),
+                      foregroundColor: const Color(0xFF7265E3),
+                      shadowColor: Colors.transparent,
+                      elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      elevation: 4,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    icon: const Icon(Icons.logout, size: 22),
-                    label: const Text(
+                    child: const Text(
                       "Sign Out",
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -261,6 +201,95 @@ class _CustomerProfileState extends State<CustomerProfile> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // ================= COMPONENTS =================
+
+  Widget _buildInfoCard(IconData icon, String title, String value) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1EFFF),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                color: const Color(0xFF7265E3),
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value.isNotEmpty ? value : "Not provided",
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(IconData icon, String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1EFFF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: const Color(0xFF7265E3), size: 22),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }

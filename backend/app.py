@@ -9,13 +9,13 @@ from routes.poster import poster_bp
 from routes.shop import shop_bp
 # add these lines right after you import shop_bp in app.py (before registering)
 import inspect
-print("shop_bp from:", inspect.getfile(shop_bp.__class__) if hasattr(shop_bp, "__class__") else shop_bp)
+print("shop_bp from:", inspect.getfile(shop_bp._class) if hasattr(shop_bp, "class_") else shop_bp)
 print("shop_bp object:", shop_bp)
 
 # Load environment variables
 load_dotenv(".env")
 
-app = Flask(__name__)
+app = Flask(_name_)
 CORS(app)
 
 # Database config
@@ -46,6 +46,7 @@ app.register_blueprint(campaign_bp, url_prefix="/api/campaigns")
 app.register_blueprint(poster_bp, url_prefix="/api")
 app.register_blueprint(shop_bp, url_prefix="/shops")
 app.register_blueprint(geofence_bp,url_prefix="/api/geofence")
+app.register_blueprint(geofence_bp,url_prefix="/api/geofence")
 
 # Print URL map for debugging (inside app context so it has access to routes)
 with app.app_context():
@@ -55,7 +56,7 @@ with app.app_context():
             print(rule, "methods:", sorted(rule.methods))
     print("----------------------")
 
-if __name__ == "__main__":
+if _name_ == "_main_":
     # Use env var to control debug on/off
     debug_mode = os.getenv("FLASK_DEBUG", "False").lower() in ("1", "true", "yes")
     # Optionally set host/port via env
