@@ -1,4 +1,3 @@
-// create_campaign_screen.dart
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -38,7 +37,6 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   final ImagePicker _picker = ImagePicker();
   final ScrollController _scrollController = ScrollController();
 
-  // Theme colors
   static const Color brandDark = Color(0xFF6A00F8);
   static const Color brandMid = Color(0xFF7C4DFF);
   static const Color brandLight = Color(0xFFEDE2FF);
@@ -78,7 +76,6 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     );
   }
 
-  // --- Navigation ---
   void _next() {
     if (_currentStep == 0 && !_step1Valid) {
       _showSnack("Please fill title & offer text.", true);
@@ -126,12 +123,9 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     });
   }
 
-  // --- Poster ---
   Future<void> _pickPoster() async {
     try {
-      final XFile? picked = await _picker.pickImage(
-        source: ImageSource.gallery,
-      );
+      final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
       if (picked != null) {
         setState(() => _posterFile = File(picked.path));
         _showSnack("Poster uploaded.");
@@ -152,9 +146,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       request.fields['start'] = _combinedStart.toIso8601String();
       request.fields['end'] = _combinedEnd.toIso8601String();
       if (_posterFile != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath('logo', _posterFile!.path),
-        );
+        request.files
+            .add(await http.MultipartFile.fromPath('logo', _posterFile!.path));
       }
 
       final response = await request.send();
@@ -175,10 +168,6 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     }
   }
 
-  // ------------------- Submit Campaign --------------------
-
-  // --- Submit ---
-  // --- Submit ---
   Future<void> _submitCampaign() async {
     setState(() => _isSubmitting = true);
     final user = FirebaseAuth.instance.currentUser;
@@ -187,47 +176,35 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       final uri = Uri.parse('http://192.168.1.9:5000/api/campaigns/');
       final request = http.MultipartRequest('POST', uri);
 
-      // owner UID (if logged in)
-      if (user != null) {
-        request.fields['owner_uid'] = user.uid;
-      }
+      if (user != null) request.fields['owner_uid'] = user.uid;
 
-      // core fields
       request.fields['title'] = _titleController.text.trim();
       request.fields['offer'] = _offerController.text.trim();
       request.fields['radius_km'] = _radiusKm.toString();
       request.fields['start'] = _combinedStart.toIso8601String();
       request.fields['end'] = _combinedEnd.toIso8601String();
 
-      // Poster handling: prefer remote generated poster URL if available.
-      // If _posterUrl exists, send it as poster_url and DO NOT upload poster file.
       if (_posterUrl != null && _posterUrl!.isNotEmpty) {
         request.fields['poster_url'] = _posterUrl!;
       } else if (_posterFile != null) {
-        // Otherwise if user chose/uploaded a local poster image, attach it
-        request.files.add(
-          await http.MultipartFile.fromPath('poster', _posterFile!.path),
-        );
+        request.files
+            .add(await http.MultipartFile.fromPath('poster', _posterFile!.path));
       }
 
       final streamed = await request.send();
       final responseStr = await streamed.stream.bytesToString();
 
-      // Check HTTP response status and optionally parse response body
       if (streamed.statusCode == 201 || streamed.statusCode == 200) {
         _showSnack("Campaign created successfully!");
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/dashboard');
-        }
+        if (mounted) Navigator.pushReplacementNamed(context, '/dashboard');
       } else {
-        // Try to include server message when available
         String serverMsg = "";
         try {
           final Map body = json.decode(responseStr);
           if (body.containsKey('error')) serverMsg = " — ${body['error']}";
         } catch (_) {}
         _showSnack(
-          "Failed to create campaign (code ${streamed.statusCode})$serverMsg",
+          "Failed (code ${streamed.statusCode})$serverMsg",
           true,
         );
       }
@@ -238,7 +215,6 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     }
   }
 
-  // --- Date Pickers ---
   Future<void> _pickStartDateTime() async {
     final now = DateTime.now();
     final pickedDate = await showDatePicker(
@@ -248,10 +224,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       lastDate: now.add(const Duration(days: 365)),
     );
     if (pickedDate != null) {
-      final pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
+      final pickedTime =
+          await showTimePicker(context: context, initialTime: TimeOfDay.now());
       if (pickedTime != null) {
         setState(() {
           _startDate = pickedDate;
@@ -270,10 +244,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       lastDate: now.add(const Duration(days: 365)),
     );
     if (pickedDate != null) {
-      final pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
+      final pickedTime =
+          await showTimePicker(context: context, initialTime: TimeOfDay.now());
       if (pickedTime != null) {
         setState(() {
           _endDate = pickedDate;
@@ -283,37 +255,77 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     }
   }
 
-  // --- Step Indicator ---
   Widget _stepIndicator() {
     const labels = ['Basic', 'Target', 'Poster', 'Review'];
     final progress = (_currentStep + 1) / labels.length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 8,
-            color: brandMid,
-            backgroundColor: Colors.grey.shade200,
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurple.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          "${(progress * 100).round()}% complete",
-          style: const TextStyle(
-            color: textPrimary,
-            fontWeight: FontWeight.w600,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    height: 44,
+                    width: 44,
+                    child: CircularProgressIndicator(
+                      value: progress,
+                      strokeWidth: 5,
+                      backgroundColor: Colors.grey.shade200,
+                      color: brandMid,
+                    ),
+                  ),
+                  Text(
+                    "${(progress * 100).round()}%",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      color: textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Text(
+                "Step ${_currentStep + 1} of ${labels.length} — ${labels[_currentStep]}",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: textPrimary,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 6,
+              color: brandMid,
+              backgroundColor: Colors.grey.shade200,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  // --- UI ---
   @override
   Widget build(BuildContext context) {
     final steps = [
@@ -341,6 +353,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
                     const SizedBox(height: 20),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
+                      transitionBuilder:
+                          (child, anim) => FadeTransition(opacity: anim, child: child),
                       child: steps[_currentStep],
                     ),
                     const SizedBox(height: 100),
@@ -355,36 +369,35 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     );
   }
 
-  // --- Header ---
   Widget _scrollingHeader() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFBF7FF), Color(0xFFEDE7F6)],
+          colors: [Color(0xFF7C4DFF), Color(0xFFB388FF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.deepPurple.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.deepPurple.withOpacity(0.15),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Row(
-        children: const [
-          Icon(Icons.campaign_rounded, color: brandDark, size: 26),
+      child: const Row(
+        children: [
+          Icon(Icons.campaign_rounded, color: Colors.white, size: 28),
           SizedBox(width: 10),
           Text(
-            "Launch Your Campaign",
+            "Launch Your Campaign 🚀",
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: brandDark,
+              fontSize: 19,
+              color: Colors.white,
             ),
           ),
         ],
@@ -392,10 +405,19 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     );
   }
 
-  // --- Bottom Buttons ---
   Widget _bottomButtons() {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           if (_currentStep > 0)
@@ -429,6 +451,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
+                elevation: 3,
               ),
               child: _isSubmitting
                   ? const SizedBox(
@@ -440,7 +463,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
                       ),
                     )
                   : Text(
-                      _currentStep < 3 ? "Next" : "Launch Campaign",
+                      _currentStep < 3 ? "Next →" : "Launch Campaign 🎯",
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
@@ -454,136 +477,31 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     );
   }
 
-  // --- Cards ---
-  Widget _basicInfoCard() => _cardWrapper("Basic Details", [
-    _textInput(
-      "Campaign Title",
-      _titleController,
-      hint: "e.g. Weekend Coffee Special",
-    ),
-    const SizedBox(height: 16),
-    _textInput(
-      "Offer Text",
-      _offerController,
-      hint: "e.g. Get 20% off on all lattes",
-      maxLines: 4,
-    ),
-  ]);
-
-  Widget _targetingCard() => _cardWrapper("Targeting", [
-    const Text("Target radius", style: TextStyle(fontWeight: FontWeight.w600)),
-    Slider(
-      value: _radiusKm,
-      min: 0.5,
-      max: 5.0,
-      divisions: 45,
-      label: "${_radiusKm.toStringAsFixed(1)} km",
-      activeColor: brandMid,
-      onChanged: (v) => setState(() => _radiusKm = v),
-    ),
-    Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        "${_radiusKm.toStringAsFixed(1)} km radius",
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-    ),
-    const SizedBox(height: 12),
-    _dateTile(
-      "Start Date & Time",
-      Icons.play_arrow,
-      _startDate != null && _startTime != null
-          ? "${DateFormat.yMMMd().format(_startDate!)}  ${_startTime!.format(context)}"
-          : "Pick start date & time",
-      _pickStartDateTime,
-    ),
-    const SizedBox(height: 10),
-    _dateTile(
-      "End Date & Time",
-      Icons.stop,
-      _endDate != null && _endTime != null
-          ? "${DateFormat.yMMMd().format(_endDate!)}  ${_endTime!.format(context)}"
-          : "Pick end date & time",
-      _pickEndDateTime,
-    ),
-  ]);
-
-  Widget _posterCard() => _cardWrapper("Campaign Poster", [
-    _posterPreview(),
-    const SizedBox(height: 16),
-    Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: _pickPoster,
-            icon: const Icon(Icons.photo),
-            label: const Text("Upload"),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _generatingPoster ? null : _generatePosterDummy,
-            icon: _generatingPoster
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Icon(Icons.auto_awesome),
-            label: _generatingPoster
-                ? const Text("Generating...")
-                : const Text("Generate AI"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: brandDark.withOpacity(0.85),
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ),
-      ],
-    ),
-  ]);
-
-  Widget _reviewCard() => _cardWrapper("Review Campaign", [
-    ListTile(
-      title: Text(
-        _titleController.text.isEmpty
-            ? "Untitled Campaign"
-            : _titleController.text,
-      ),
-      subtitle: Text(_offerController.text),
-    ),
-    Text("Radius: ${_radiusKm.toStringAsFixed(1)} km"),
-    Text(
-      "Schedule: ${DateFormat.yMMMd().add_jm().format(_combinedStart)} → ${DateFormat.yMMMd().add_jm().format(_combinedEnd)}",
-    ),
-    const SizedBox(height: 12),
-    _posterPreview(),
-  ]);
-
-  // --- Reusable Widgets ---
   Widget _cardWrapper(String title, List<Widget> children) {
-    return Card(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
       margin: const EdgeInsets.only(bottom: 20),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 4,
-      shadowColor: brandMid.withOpacity(0.15),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 12),
-            ...children,
-          ],
-        ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.deepPurple.withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
+          const SizedBox(height: 12),
+          ...children,
+        ],
       ),
     );
   }
@@ -597,10 +515,9 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        ),
+        Text(label,
+            style:
+                const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
@@ -619,6 +536,155 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       ],
     );
   }
+
+  Widget _posterPreview() {
+    final height = 180.0;
+    if (_posterFile != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.file(_posterFile!, height: height, fit: BoxFit.cover),
+      );
+    } else if (_posterUrl != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          "http://192.168.1.9:5000" + _posterUrl!,
+          height: height,
+          fit: BoxFit.cover,
+        ),
+      );
+    } else {
+      return Container(
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.grey.shade200,
+        ),
+        child: const Center(child: Icon(Icons.image, color: Colors.grey)),
+      );
+    }
+  }
+
+  // 🧩 Individual Step Cards
+  Widget _basicInfoCard() => _cardWrapper("Basic Details", [
+        _textInput(
+          "Campaign Title",
+          _titleController,
+          hint: "e.g. Weekend Coffee Special",
+        ),
+        const SizedBox(height: 16),
+        _textInput(
+          "Offer Text",
+          _offerController,
+          hint: "e.g. Get 20% off on all lattes",
+          maxLines: 4,
+        ),
+      ]);
+
+  Widget _targetingCard() => _cardWrapper("Targeting 🎯", [
+        const Text("Target radius",
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        Slider(
+          value: _radiusKm,
+          min: 0.5,
+          max: 5.0,
+          divisions: 45,
+          label: "${_radiusKm.toStringAsFixed(1)} km",
+          activeColor: brandMid,
+          onChanged: (v) => setState(() => _radiusKm = v),
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            "${_radiusKm.toStringAsFixed(1)} km radius",
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _dateTile(
+          "Start Date & Time",
+          Icons.play_arrow_rounded,
+          _startDate != null && _startTime != null
+              ? "${DateFormat.yMMMd().format(_startDate!)}  ${_startTime!.format(context)}"
+              : "Pick start date & time",
+          _pickStartDateTime,
+        ),
+        const SizedBox(height: 10),
+        _dateTile(
+          "End Date & Time",
+          Icons.stop_circle_rounded,
+          _endDate != null && _endTime != null
+              ? "${DateFormat.yMMMd().format(_endDate!)}  ${_endTime!.format(context)}"
+              : "Pick end date & time",
+          _pickEndDateTime,
+        ),
+      ]);
+
+  Widget _posterCard() => _cardWrapper("Campaign Poster 🖼️", [
+        _posterPreview(),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _pickPoster,
+                icon: const Icon(Icons.photo_library_rounded),
+                label: const Text("Upload Poster"),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _generatingPoster ? null : _generatePosterDummy,
+                icon: _generatingPoster
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.auto_awesome_rounded),
+                label: _generatingPoster
+                    ? const Text("Generating...")
+                    : const Text("Generate AI Poster"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: brandDark.withOpacity(0.85),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ]);
+
+  Widget _reviewCard() => _cardWrapper("Review & Confirm ✅", [
+        ListTile(
+          leading: const Icon(Icons.campaign_rounded, color: brandMid),
+          title: Text(
+            _titleController.text.isEmpty
+                ? "Untitled Campaign"
+                : _titleController.text,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            _offerController.text.isEmpty
+                ? "No offer description"
+                : _offerController.text,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text("Radius: ${_radiusKm.toStringAsFixed(1)} km",
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 4),
+        Text(
+          "Schedule: ${DateFormat.yMMMd().add_jm().format(_combinedStart)} → ${DateFormat.yMMMd().add_jm().format(_combinedEnd)}",
+          style: const TextStyle(color: Colors.black87),
+        ),
+        const SizedBox(height: 14),
+        _posterPreview(),
+      ]);
 
   Widget _dateTile(
     String label,
@@ -659,33 +725,5 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
         ),
       ),
     );
-  }
-
-  Widget _posterPreview() {
-    final height = 180.0;
-    if (_posterFile != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.file(_posterFile!, height: height, fit: BoxFit.cover),
-      );
-    } else if (_posterUrl != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.network(
-          "http://192.168.1.9:5000" + _posterUrl!,
-          height: height,
-          fit: BoxFit.cover,
-        ),
-      );
-    } else {
-      return Container(
-        height: height,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.grey.shade200,
-        ),
-        child: const Center(child: Icon(Icons.image, color: Colors.grey)),
-      );
-    }
   }
 }
