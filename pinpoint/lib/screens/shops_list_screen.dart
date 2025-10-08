@@ -2,6 +2,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'shop_detail_screen.dart';
+import '../globals.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ShopsListScreen extends StatefulWidget {
   final double? lat;
@@ -25,6 +28,7 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
     _fetchShops();
   }
 
+  // ------------------ Replace _fetchShops and helpers with this ------------------
   Future<void> _fetchShops() async {
     setState(() {
       _loading = true;
@@ -32,32 +36,127 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
     });
 
     try {
-      // ------------------ MOCKED DATA ------------------
-      await Future.delayed(const Duration(milliseconds: 250));
-      setState(() {
-        _shops = mockShops
-            .where(
-              (s) =>
-                  _query.isEmpty ||
-                  s.name.toLowerCase().contains(_query.toLowerCase()) ||
-                  (s.category ?? "").toLowerCase().contains(
-                    _query.toLowerCase(),
-                  ),
-            )
-            .toList();
-      });
+      final userLat = widget.lat ?? currentLat;
+      final userLon = widget.lon ?? currentLong;
 
-      // ------------------ REAL API (commented) ------------------
-      // final uri = Uri.parse("$API_BASE/api/shops?lat=${widget.lat}&lon=${widget.lon}&q=${Uri.encodeComponent(_query)}");
-      // final resp = await http.get(uri);
-      // if (resp.statusCode == 200) { ... parse and set _shops }
-    } catch (e) {
+      // Hardcoded endpoint for local testing (you already had this)
+      final uri = Uri.parse(
+        "http://192.168.1.9:5000/shops/nearby?lat=13.082700&lon=80.270700&radius=10000000000",
+      );
+
+      final resp = await http.get(uri);
+
+      // Debug: print raw body so you can inspect in console/logcat
+      print("SHOPS RAW RESPONSE: ${resp.body}");
+
+      if (resp.statusCode == 200) {
+        final data = json.decode(resp.body);
+
+        // Support both 'shops' (your backend) and 'nearby' (old format)
+        final List<dynamic> list =
+            (data['shops'] ?? data['nearby'] ?? []) as List<dynamic>;
+
+        final shops = list.map((r) {
+          // Helper to safely parse doubles from int/double/string
+          double parseDouble(dynamic v) {
+            if (v == null) return 0.0;
+            if (v is double) return v;
+            if (v is int) return v.toDouble();
+            if (v is String) return double.tryParse(v) ?? 0.0;
+            return 0.0;
+          }
+
+          // distance can be named differently depending on backend
+          final double dist = parseDouble(
+            r['distanceMeters'] ??
+                r['distance_m'] ??
+                r['distance'] ??
+                r['distance_meters'],
+          );
+
+          // Prefer lat/lon fields if present, otherwise try location_wkt
+          final double lat = r.containsKey('lat')
+              ? parseDouble(r['lat'])
+              : _extractLat(r['location_wkt']);
+          final double lon = r.containsKey('lon')
+              ? parseDouble(r['lon'])
+              : _extractLon(r['location_wkt']);
+
+          // Choose image URL fallback if backend returns null/empty
+          final String? imageUrlRaw = r['imageUrl'] as String?;
+          final String imageUrl =
+              (imageUrlRaw != null && imageUrlRaw.isNotEmpty)
+              ? imageUrlRaw
+              : "https://images.unsplash.com/photo-1556742400-b5d8d80d48f7?auto=format&fit=crop&w=1080&q=80";
+
+          return Shop(
+            id: (r['id'] is int)
+                ? r['id'] as int
+                : int.tryParse("${r['id']}") ?? 0,
+            name: r['name'] ?? 'Unnamed',
+            category: r['category'] ?? "General",
+            lat: lat,
+            lon: lon,
+            avgSpend: parseDouble(r['avgSpend'] ?? r['avg_spend'] ?? 0),
+            hasOffer: r['hasOffer'] ?? r['has_offer'] ?? false,
+            distanceMeters: dist,
+            snippet: r['snippet'] ?? r['address'] ?? "Local shop nearby",
+            imageUrl: imageUrl,
+            rating: parseDouble(r['rating'] ?? r['avg_rating'] ?? 4.0),
+          );
+        }).toList();
+
+        // optional: sort by distance if you want nearest first
+        shops.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
+
+        if (mounted) setState(() => _shops = shops);
+      } else {
+        setState(() {
+          _error = "Server returned ${resp.statusCode}";
+          _shops = mockShops;
+        });
+      }
+    } catch (e, st) {
+      print("ERROR fetching shops: $e\n$st");
       setState(() {
         _error = "Error: $e";
+        _shops = mockShops; // fallback to mocks
       });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  double _extractLat(String? wkt) {
+    // Example WKT: "POINT(80.28358 13.06104)" -> returns second value (lat)
+    if (wkt == null) return 0.0;
+    try {
+      final cleaned = wkt
+          .replaceAll(RegExp(r'POINT\s*\('), '')
+          .replaceAll(')', '')
+          .trim();
+      final parts = cleaned.split(RegExp(r'\s+'));
+      if (parts.length >= 2) {
+        // WKT typically has lon first, lat second
+        return double.tryParse(parts[1]) ?? 0.0;
+      }
+    } catch (_) {}
+    return 0.0;
+  }
+
+  double _extractLon(String? wkt) {
+    if (wkt == null) return 0.0;
+    try {
+      final cleaned = wkt
+          .replaceAll(RegExp(r'POINT\s*\('), '')
+          .replaceAll(')', '')
+          .trim();
+      final parts = cleaned.split(RegExp(r'\s+'));
+      if (parts.isNotEmpty) {
+        return double.tryParse(parts[0]) ?? 0.0;
+      }
+    } catch (_) {}
+    return 0.0;
   }
 
   void _onSearchChanged(String q) {
@@ -67,6 +166,17 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
   }
 
   void _unfocus() => FocusScope.of(context).unfocus();
+  Widget _imageFallback(Shop s) {
+    return Container(
+      color: const Color(0xFFF2F2F6),
+      child: Center(
+        child: Text(
+          s.name.isNotEmpty ? s.name[0] : '',
+          style: const TextStyle(fontSize: 24, color: Colors.black26),
+        ),
+      ),
+    );
+  }
 
   Widget _shopTile(Shop s) {
     return Container(
@@ -94,30 +204,27 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
                   child: SizedBox(
                     width: 88,
                     height: 88,
-                    child: Image.network(
-                      s.imageUrl ?? '',
-                      fit: BoxFit.cover,
-                      loadingBuilder: (ctx, child, prog) {
-                        if (prog == null) return child;
-                        return Container(
-                          color: const Color(0xFFF2F2F6),
-                          child: const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        );
-                      },
-                      errorBuilder: (ctx, e, st) => Container(
-                        color: const Color(0xFFF2F2F6),
-                        child: Center(
-                          child: Text(
-                            s.name.isNotEmpty ? s.name[0] : '',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              color: Colors.black26,
-                            ),
-                          ),
-                        ),
-                      ),
+                    child: SizedBox(
+                      width: 88,
+                      height: 88,
+                      child: s.imageUrl != null && s.imageUrl!.isNotEmpty
+                          ? Image.network(
+                              s.imageUrl!,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (ctx, child, prog) {
+                                if (prog == null) return child;
+                                return Container(
+                                  color: const Color(0xFFF2F2F6),
+                                  child: const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                );
+                              },
+                              errorBuilder: (ctx, e, st) => _imageFallback(s),
+                            )
+                          : _imageFallback(s),
                     ),
                   ),
                 ),
