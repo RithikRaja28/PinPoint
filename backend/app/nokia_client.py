@@ -120,11 +120,13 @@ def retrieve_sim_swap_date(phone_number: str):
         print("❌ SIM Swap Retrieve Error:", e)
         return {"error": str(e)}
 
+
+# Retrieve Device Location
 def get_device_location(phone_number: str):
     """
     Retrieve the current or last known location of a device from Nokia Network-as-Code.
     """
-    url = f"{NOKIA_BASE_URL}/device-location/v0/retrieve"
+    url = f"{NOKIA_BASE_URL}/location-retrieval/v0/retrieve"
     payload = {
         "device": {"phoneNumber": phone_number}
     }
