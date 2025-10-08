@@ -15,6 +15,16 @@ def create_campaign():
         radius_km = request.form.get("radius_km")
         start = request.form.get("start")
         end = request.form.get("end")
+        owner_uid = None
+        # prefer form value first (multipart) then JSON
+        if request.form and request.form.get("owner_uid"):
+            owner_uid = request.form.get("owner_uid")
+        else:
+            try:
+                payload_json = request.get_json(silent=True) or {}
+                owner_uid = payload_json.get("owner_uid") or owner_uid
+            except Exception:
+                pass
 
         if not title or not offer or not radius_km or not start or not end:
             return jsonify({"error": "Missing required fields"}), 400
@@ -42,6 +52,7 @@ def create_campaign():
 
         # --- Save to DB ---
         campaign_obj = CampaignModel(
+            owner_uid=owner_uid, 
             title=title,
             offer=offer,
             radius_km=radius_km,

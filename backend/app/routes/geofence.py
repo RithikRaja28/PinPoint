@@ -11,7 +11,7 @@ from ..nokia_client import (
 import os
 import requests
 import json
-geofence_bp = Blueprint("geofence", __name__)
+geofence_bp = Blueprint("geofence", _name_)
 
 # Verify Device Location (Existing)
 
@@ -308,7 +308,7 @@ def remove_subscription(subscription_id):
     """
     Delete a geofencing subscription by its ID.
     """
-    print(f"🗑️ Deleting subscription: {subscription_id}")
+    print(f"🗑 Deleting subscription: {subscription_id}")
     result = delete_geofence_subscription(subscription_id)
     return jsonify(result), 200
 

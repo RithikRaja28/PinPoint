@@ -11,13 +11,20 @@ poster_bp = Blueprint("poster_bp", __name__)
 
 @poster_bp.route("/poster", methods=["POST"])
 def poster_create():
+    """
+    Generate a poster PNG from HTML (Playwright), save to uploads folder,
+    and return the poster_url to the frontend. Do NOT save campaign to DB.
+    """
     try:
-        # --- Campaign data from frontend ---
+        # --- Campaign data from frontend (for poster text only) ---
         title = request.form.get("title", "My Campaign")
         offer = request.form.get("offer", "Special Offer!")
         shop_name = request.form.get("shop_name", "My Shop")
         shop_address = request.form.get("shop_address", "123 Street")
-        radius_km = float(request.form.get("radius_km", 5))
+        try:
+            radius_km = float(request.form.get("radius_km", 5))
+        except Exception:
+            radius_km = 5.0
         start = request.form.get("start")
         end = request.form.get("end")
 
@@ -27,21 +34,32 @@ def poster_create():
         start_dt = datetime.fromisoformat(start)
         end_dt = datetime.fromisoformat(end)
 
-        # --- Handle optional logo upload ---
+        # --- Handle optional logo upload: convert to data URL for embedding ---
         logo_data_url = ""
         if "logo" in request.files:
             logo_file = request.files["logo"]
-            filename = f"logo_{int(datetime.now().timestamp())}.png"
+            # create safe unique filename
+            filename = f"logo_{int(datetime.now().timestamp())}_{logo_file.filename}"
             logo_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+            os.makedirs(current_app.config["UPLOAD_FOLDER"], exist_ok=True)
             logo_file.save(logo_path)
+            # encode as base64 data url for inline <img src="data:...">
             with open(logo_path, "rb") as f:
                 logo_base64 = base64.b64encode(f.read()).decode("utf-8")
-            logo_data_url = f"data:image/png;base64,{logo_base64}"
+            # try to detect mime from extension, default to png
+            ext = os.path.splitext(filename)[1].lower()
+            mime = "image/png"
+            if ext in (".jpg", ".jpeg"):
+                mime = "image/jpeg"
+            elif ext == ".gif":
+                mime = "image/gif"
+            logo_data_url = f"data:{mime};base64,{logo_base64}"
 
         # --- Generate HTML for poster ---
         prompt_html = f"""
             <html>
             <head>
+            <meta charset="utf-8" />
             <style>
                 body {{
                     margin: 0;
@@ -129,9 +147,10 @@ def poster_create():
             </html>
             """
 
-        # --- Render HTML → PNG poster ---
+        # --- Render HTML → PNG poster using Playwright ---
         poster_filename = f"poster_{int(datetime.now().timestamp())}.png"
         poster_path = os.path.join(current_app.config["UPLOAD_FOLDER"], poster_filename)
+        os.makedirs(current_app.config["UPLOAD_FOLDER"], exist_ok=True)
 
         with sync_playwright() as p:
             browser = p.chromium.launch()
@@ -140,32 +159,21 @@ def poster_create():
             page.screenshot(path=poster_path, full_page=True)
             browser.close()
 
-        # ✅ Wait to ensure file is written to disk
-        time.sleep(2)
+        # small sleep to ensure file appears on disk
+        time.sleep(0.2)
         if not os.path.exists(poster_path):
             return jsonify({"error": "Poster not found after generation"}), 500
 
         poster_url = f"/uploads/{poster_filename}"
 
-        # --- Save campaign to DB with poster ---
-        campaign_obj = CampaignModel(
-            title=title,
-            offer=offer,
-            radius_km=radius_km,
-            start=start_dt,
-            end=end_dt,
-            poster_path=poster_url
-        )
-        db.session.add(campaign_obj)
-        db.session.commit()
-
+        # --- Return only poster url, do NOT save to DB ---
         return jsonify({
-            "message": "✅ Campaign created with AI poster",
-            "poster_url": poster_url,
-            "campaign": campaign_obj.to_dict()
+            "message": "Poster generated",
+            "poster_url": poster_url
         }), 201
 
     except Exception as e:
-        db.session.rollback()
-        print("❌ Error generating poster:", e)
+        # keep error details in server logs but return safe message
+        current_app.logger.exception("❌ Error generating poster: %s", e)
+        db.session.rollback() if 'db' in globals() else None
         return jsonify({"error": str(e)}), 500

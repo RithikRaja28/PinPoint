@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CreateCampaignScreen extends StatefulWidget {
   const CreateCampaignScreen({super.key});
@@ -143,7 +144,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   Future<void> _generatePosterDummy() async {
     setState(() => _generatingPoster = true);
     try {
-      final uri = Uri.parse("http://192.168.1.11:5000/api/poster");
+      final uri = Uri.parse("http://192.168.1.9:5000/api/poster");
       final request = http.MultipartRequest('POST', uri);
       request.fields['shop_name'] = _titleController.text.trim();
       request.fields['offer'] = _offerController.text.trim();
@@ -161,7 +162,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = json.decode(respStr);
         setState(() {
-          _posterUrl = "http://192.168.1.11:5000${data['poster_url']}";
+          _posterUrl = "${data['poster_url']}";
         });
         _showSnack("AI Poster Generated!");
       } else {
@@ -177,29 +178,58 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   // ------------------- Submit Campaign --------------------
 
   // --- Submit ---
+  // --- Submit ---
   Future<void> _submitCampaign() async {
     setState(() => _isSubmitting = true);
+    final user = FirebaseAuth.instance.currentUser;
+
     try {
-      final uri = Uri.parse('http://192.168.1.11:5000/api/campaigns/');
+      final uri = Uri.parse('http://192.168.1.9:5000/api/campaigns/');
       final request = http.MultipartRequest('POST', uri);
+
+      // owner UID (if logged in)
+      if (user != null) {
+        request.fields['owner_uid'] = user.uid;
+      }
+
+      // core fields
       request.fields['title'] = _titleController.text.trim();
       request.fields['offer'] = _offerController.text.trim();
       request.fields['radius_km'] = _radiusKm.toString();
       request.fields['start'] = _combinedStart.toIso8601String();
       request.fields['end'] = _combinedEnd.toIso8601String();
-      if (_posterFile != null) {
+
+      // Poster handling: prefer remote generated poster URL if available.
+      // If _posterUrl exists, send it as poster_url and DO NOT upload poster file.
+      if (_posterUrl != null && _posterUrl!.isNotEmpty) {
+        request.fields['poster_url'] = _posterUrl!;
+      } else if (_posterFile != null) {
+        // Otherwise if user chose/uploaded a local poster image, attach it
         request.files.add(
           await http.MultipartFile.fromPath('poster', _posterFile!.path),
         );
       }
-      final response = await request.send();
-      if (response.statusCode == 201) {
+
+      final streamed = await request.send();
+      final responseStr = await streamed.stream.bytesToString();
+
+      // Check HTTP response status and optionally parse response body
+      if (streamed.statusCode == 201 || streamed.statusCode == 200) {
         _showSnack("Campaign created successfully!");
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/dashboard');
         }
       } else {
-        _showSnack("Failed to create campaign.", true);
+        // Try to include server message when available
+        String serverMsg = "";
+        try {
+          final Map body = json.decode(responseStr);
+          if (body.containsKey('error')) serverMsg = " — ${body['error']}";
+        } catch (_) {}
+        _showSnack(
+          "Failed to create campaign (code ${streamed.statusCode})$serverMsg",
+          true,
+        );
       }
     } catch (e) {
       _showSnack("Error: $e", true);
@@ -641,7 +671,11 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     } else if (_posterUrl != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Image.network(_posterUrl!, height: height, fit: BoxFit.cover),
+        child: Image.network(
+          "http://192.168.1.9:5000" + _posterUrl!,
+          height: height,
+          fit: BoxFit.cover,
+        ),
       );
     } else {
       return Container(

@@ -1,76 +1,4 @@
-// import 'package:flutter/material.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-
-// class CollobRequestStore extends StatelessWidget {
-//   final String storeId;
-
-//   const CollobRequestStore({Key? key, required this.storeId}) : super(key: key);
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Color(0xFF6A0DAD),
-//       appBar: AppBar(
-//         title: Text("Store Details"),
-//         backgroundColor: Color(0xFF6A0DAD),
-//         elevation: 0,
-//       ),
-//       body: FutureBuilder<DocumentSnapshot>(
-//         future: FirebaseFirestore.instance
-//             .collection('stores')
-//             .doc(storeId)
-//             .get(),
-//         builder: (context, snapshot) {
-//           if (!snapshot.hasData) {
-//             return Center(
-//               child: CircularProgressIndicator(color: Colors.white),
-//             );
-//           }
-
-//           var store = snapshot.data!;
-//           return Padding(
-//             padding: const EdgeInsets.all(16.0),
-//             child: Card(
-//               shape: RoundedRectangleBorder(
-//                 borderRadius: BorderRadius.circular(20),
-//               ),
-//               color: Colors.white,
-//               elevation: 8,
-//               child: Padding(
-//                 padding: const EdgeInsets.all(20.0),
-//                 child: Column(
-//                   mainAxisSize: MainAxisSize.min,
-//                   crossAxisAlignment: CrossAxisAlignment.start,
-//                   children: [
-//                     Text(
-//                       store['name'] ?? 'Store Name',
-//                       style: TextStyle(
-//                         fontSize: 24,
-//                         fontWeight: FontWeight.bold,
-//                         color: Color(0xFF6A0DAD),
-//                       ),
-//                     ),
-//                     SizedBox(height: 10),
-//                     // Text(
-//                     //   store['address'] ?? 'Address',
-//                     //   style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-//                     // ),
-//                     SizedBox(height: 20),
-//                     // Text(
-//                     //   store['description'] ?? 'No description available.',
-//                     //   style: TextStyle(fontSize: 16, color: Colors.grey[800]),
-//                     // ),
-//                   ],
-//                 ),
-//               ),
-//             ),
-//           );
-//         },
-//       ),
-//     );
-//   }
-// }
-
+// lib/screens/collab_request_store.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pinpoint/globals.dart';
@@ -87,15 +15,11 @@ class CollobRequestStore extends StatelessWidget {
         .get();
   }
 
-  Future<void> sendCollabRequest(
-    BuildContext context,
-    String receiverUid,
-  ) async {
+  Future<void> sendCollabRequest(BuildContext context, String receiverUid) async {
     final currentUid = currentUser?.uid ?? "";
     if (currentUid.isEmpty) return;
 
     try {
-      // Add this shop UID to user's collab list
       await FirebaseFirestore.instance
           .collection("collabs")
           .doc(currentUid)
@@ -106,208 +30,176 @@ class CollobRequestStore extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Collaboration request sent!")),
       );
+      Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error sending request: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error sending request: $e")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF6A0DAD),
-      appBar: AppBar(
-        title: const Text("Store Details"),
-        backgroundColor: const Color(0xFF6A0DAD),
-        elevation: 0,
-      ),
-      body: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        future: getStoreDetails(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.white),
-            );
-          }
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: getStoreDetails(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 300,
+            child: Center(
+              child: CircularProgressIndicator(color: Color(0xFF6A1B9A)),
+            ),
+          );
+        }
 
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const SizedBox(
+            height: 200,
+            child: Center(
               child: Text(
                 "Store not found.",
-                style: TextStyle(color: Colors.white, fontSize: 18),
+                style: TextStyle(fontSize: 18),
               ),
-            );
-          }
+            ),
+          );
+        }
 
-          final store = snapshot.data!.data()!;
-          final name = store['shopName'] ?? store['name'] ?? 'Unnamed Store';
-          final description =
-              store['description'] ?? 'No description available.';
-          final address = store['address'] ?? 'Address not available';
-          final email = store['email'] ?? 'N/A';
-          final phone = store['phone'] ?? 'N/A';
-          final city = store['city'] ?? '';
-          final district = store['district'] ?? '';
-          final shopContact = store['shopContact'] ?? '';
-          final lat = store['shopLocation']?['lat']?.toString() ?? '0.0';
-          final lng = store['shopLocation']?['lng']?.toString() ?? '0.0';
+        final store = snapshot.data!.data()!;
+        final name = store['shopName'] ?? store['name'] ?? 'Unnamed Store';
+        final description = store['description'] ?? 'No description available.';
+        final address = store['address'] ?? 'Address not available';
+        final email = store['email'] ?? 'N/A';
+        final phone = store['phone'] ?? 'N/A';
+        final city = store['city'] ?? '';
+        final district = store['district'] ?? '';
+        final shopContact = store['shopContact'] ?? '';
+        final lat = store['shopLocation']?['lat']?.toString() ?? '0.0';
+        final lng = store['shopLocation']?['lng']?.toString() ?? '0.0';
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              color: Colors.white,
-              elevation: 8,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Center(
+                  child: Container(
+                    width: 50,
+                    height: 5,
+                    margin: const EdgeInsets.only(bottom: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // --- Shop Name ---
                     Text(
                       name,
                       style: const TextStyle(
-                        fontSize: 26,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF6A0DAD),
+                        color: Color(0xFF4A148C),
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Divider(color: Colors.grey[400]),
-                    const SizedBox(height: 10),
-
-                    // --- Description ---
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.description, color: Color(0xFF6A0DAD)),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            description,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ],
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.black54),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    const SizedBox(height: 15),
+                  ],
+                ),
 
-                    // --- Address ---
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.location_on, color: Color(0xFF6A0DAD)),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            "$address, $district, $city",
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
+                const SizedBox(height: 10),
+                Text(
+                  description,
+                  style: const TextStyle(fontSize: 15, color: Colors.black87),
+                ),
+                const SizedBox(height: 15),
+                Divider(color: Colors.grey.shade300),
 
-                    // --- Contact Info ---
-                    Row(
-                      children: [
-                        const Icon(Icons.email, color: Color(0xFF6A0DAD)),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            email,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Icon(Icons.phone, color: Color(0xFF6A0DAD)),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            phone,
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (shopContact.isNotEmpty) ...[
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.contact_mail,
-                            color: Color(0xFF6A0DAD),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              shopContact,
-                              style: const TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    const SizedBox(height: 15),
+                // Details List
+                _infoTile(Icons.location_on, "$address, $district, $city"),
+                _infoTile(Icons.email, email),
+                _infoTile(Icons.phone, phone),
+                if (shopContact.isNotEmpty)
+                  _infoTile(Icons.contact_phone, shopContact),
+                _infoTile(Icons.map, "Lat: $lat, Lng: $lng"),
 
-                    // --- Map coordinates ---
-                    Row(
-                      children: [
-                        const Icon(Icons.map, color: Color(0xFF6A0DAD)),
-                        const SizedBox(width: 10),
-                        Text(
-                          "Lat: $lat, Lng: $lng",
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 25),
+                const SizedBox(height: 25),
 
-                    // --- Collaboration Button ---
-                    Center(
+                // Buttons
+                Row(
+                  children: [
+                    Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () =>
                             sendCollabRequest(context, store['uid']),
+                        icon: const Icon(Icons.handshake_rounded, size: 20),
+                        label: const Text(
+                          "Send Request",
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF6A0DAD),
+                          backgroundColor: const Color(0xFFD1C4E9), // Light lavender
+                          foregroundColor: const Color(0xFF4A148C),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 40,
-                            vertical: 14,
-                          ),
+                          elevation: 1,
                         ),
-                        icon: const Icon(Icons.handshake, color: Colors.white),
-                        label: const Text(
-                          "Send Collaboration Request",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.cancel_outlined),
+                        label: const Text("Cancel"),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF4A148C)),
+                          foregroundColor: const Color(0xFF4A148C),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 10),
+              ],
             ),
-          );
-        },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _infoTile(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: const Color(0xFF6A1B9A)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 15.5, color: Colors.black87),
+            ),
+          ),
+        ],
       ),
     );
   }
