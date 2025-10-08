@@ -19,25 +19,32 @@ def create_geofence_subscription(phone_number: str, lat: float, lon: float, radi
     url = f"{NOKIA_BASE_URL}/geofencing-subscriptions/v0.3/subscriptions"
     payload = {
         "protocol": "HTTP",
-        "sink": "https://your-backend-domain.com/api/geofence/callback",
-        "types": ["org.camaraproject.geofencing-subscriptions.v0.area-entered"],
+        "sink": "http://192.168.1.11:5000/api/geofence/callback",  # your callback endpoint
+        "types": ["org.camaraproject.geofencing-subscriptions.v0.area-left"],  # ✅ only trigger when leaving
         "config": {
             "subscriptionDetail": {
                 "device": {"phoneNumber": phone_number},
-                "area": {"areaType": "CIRCLE", "center": {"latitude": lat, "longitude": lon}, "radius": radius}
+                "area": {
+                    "areaType": "CIRCLE",
+                    "center": {"latitude": lat, "longitude": lon},
+                    "radius": radius
+                }
             },
-            "initialEvent": True,
+            "initialEvent": True,  # optional, triggers once immediately after creation
             "subscriptionMaxEvents": 10,
             "subscriptionExpireTime": "2045-03-22T05:40:58.469Z"
         }
     }
+
     try:
-        res = requests.post(url, data=json.dumps(payload), headers=HEADERS, verify=certifi.where(), timeout=15)
+        res = requests.post(url, data=json.dumps(payload),
+                            headers=HEADERS, verify=certifi.where(), timeout=15)
         print("📡 Create Geofence Response:", res.status_code, res.text)
         return res.json()
     except Exception as e:
         print("❌ Error creating geofence subscription:", e)
         return {"error": str(e)}
+
 
 # Retrieve Geofencing Subscription
 def retrieve_geofence_subscription(subscription_id: str):
@@ -102,7 +109,6 @@ def check_sim_swap(phone_number: str, max_age: int = 240):
         print("❌ SIM Swap Check Error:", e)
         return {"error": str(e)}
 
-# SIM Swap Retrieve Date
 def retrieve_sim_swap_date(phone_number: str):
     url = f"{NOKIA_BASE_URL}/passthrough/camara/v1/sim-swap/sim-swap/v0/retrieve-date"
     payload = {"phoneNumber": phone_number}
@@ -113,3 +119,35 @@ def retrieve_sim_swap_date(phone_number: str):
     except Exception as e:
         print("❌ SIM Swap Retrieve Error:", e)
         return {"error": str(e)}
+
+
+# # Retrieve Device Location
+# def get_device_location(phone_number: str):
+#     """
+#     Retrieve the current or last known location of a device from Nokia Network-as-Code.
+#     """
+#     url = f"{NOKIA_BASE_URL}/location-retrieval/v0/retrieve"
+#     payload = {
+#         "device": {"phoneNumber": phone_number}
+#     }
+#     try:
+#         res = requests.post(
+#             url,
+#             data=json.dumps(payload),
+#             headers=HEADERS,
+#             verify=certifi.where(),
+#             timeout=15
+#         )
+#         print("📡 Device Location Response:", res.status_code, res.text)
+#         if res.status_code == 200:
+#             data = res.json()
+#             # The structure depends on Nokia's API, but usually:
+#             return {
+#                 "latitude": data.get("location", {}).get("latitude"),
+#                 "longitude": data.get("location", {}).get("longitude"),
+#                 "timestamp": data.get("location", {}).get("timestamp")
+#             }
+#         return {"error": f"Unexpected response: {res.status_code} - {res.text}"}
+#     except Exception as e:
+#         print("❌ Error retrieving device location:", e)
+#         return {"error": str(e)}

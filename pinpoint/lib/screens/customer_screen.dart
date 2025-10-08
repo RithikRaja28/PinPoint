@@ -6,8 +6,6 @@ import 'package:pinpoint/globals.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
- 
-import 'package:pinpoint/screens/business/business_profile.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class CustomerPage extends StatefulWidget {
@@ -19,12 +17,10 @@ class CustomerPage extends StatefulWidget {
 
 class _CustomerPageState extends State<CustomerPage> {
   int _currentIndex = 0;
-
   GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
   LatLng _initialPosition = const LatLng(28.6139, 77.2090); // Default Delhi
   bool _loadingMap = true;
-
   List<Map<String, dynamic>> _shops = [];
 
   @override
@@ -72,9 +68,7 @@ class _CustomerPageState extends State<CustomerPage> {
             markerId: const MarkerId("user_location"),
             position: _initialPosition,
             infoWindow: const InfoWindow(title: "You are here"),
-            icon: BitmapDescriptor.defaultMarkerWithHue(
-              BitmapDescriptor.hueAzure,
-            ),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
           ),
         );
         _loadingMap = false;
@@ -92,12 +86,10 @@ class _CustomerPageState extends State<CustomerPage> {
     }
   }
 
-  // ------------------- Load Shops from Firebase -------------------
+  // ------------------- Load Shops -------------------
   Future<void> _loadShops() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('stores')
-          .get();
+      final snapshot = await FirebaseFirestore.instance.collection('stores').get();
 
       final newMarkers = <Marker>{};
       final shopsData = <Map<String, dynamic>>[];
@@ -142,48 +134,86 @@ class _CustomerPageState extends State<CustomerPage> {
     }
   }
 
+  // ------------------- Shop Info Bottom Sheet -------------------
   void _showShopDialog(String shopName, Map<String, dynamic> data) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      backgroundColor: Colors.grey[50],
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
       builder: (context) => Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        padding: const EdgeInsets.all(24.0),
+        child: Wrap(
           children: [
-            Text(
-              shopName,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
+            Center(
+              child: Container(
+                width: 50,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
-            const SizedBox(height: 10),
-            Text("Description: ${data['description'] ?? 'N/A'}"),
-            Text("City: ${data['city'] ?? 'N/A'}"),
-            Text("Phone: ${data['phone'] ?? 'N/A'}"),
-            Text("Address: ${data['address'] ?? 'N/A'}"),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.storefront, color: Colors.deepPurple, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  shopName,
+                  style: const TextStyle(
+                    fontSize: 23,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.deepPurple,
+                  ),
                 ),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 12,
-                  horizontal: 25,
+              ],
+            ),
+            const Divider(thickness: 1.2, height: 30),
+            _shopDetailRow(Icons.info_outline, "Description", data['description']),
+            _shopDetailRow(Icons.location_city_rounded, "City", data['city']),
+            _shopDetailRow(Icons.call, "Phone", data['phone']),
+            _shopDetailRow(Icons.place, "Address", data['address']),
+            const SizedBox(height: 20),
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded),
+                label: const Text("Close"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
                 ),
               ),
-              child: const Text("Close", style: TextStyle(fontSize: 16)),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _shopDetailRow(IconData icon, String title, dynamic value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.purple[400], size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              "$title: ${value ?? 'N/A'}",
+              style: const TextStyle(fontSize: 16, color: Colors.black87),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -196,19 +226,14 @@ class _CustomerPageState extends State<CustomerPage> {
     return const CustomerProfile();
   }
 
-
   // ------------------- Map Section -------------------
   Widget _mapSection() {
     return _loadingMap
-        ? const Center(child: CircularProgressIndicator())
+        ? const Center(child: CircularProgressIndicator(color: Colors.deepPurple))
         : Stack(
             children: [
               GoogleMap(
-                key: const ValueKey("shop_map"),
-                initialCameraPosition: CameraPosition(
-                  target: _initialPosition,
-                  zoom: 14,
-                ),
+                initialCameraPosition: CameraPosition(target: _initialPosition, zoom: 14),
                 markers: _markers,
                 myLocationEnabled: true,
                 myLocationButtonEnabled: true,
@@ -218,75 +243,110 @@ class _CustomerPageState extends State<CustomerPage> {
               DraggableScrollableSheet(
                 initialChildSize: 0.12,
                 minChildSize: 0.12,
-                maxChildSize: 0.4,
+                maxChildSize: 0.45,
                 builder: (context, scrollController) {
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(25),
-                      ),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black26,
-                          blurRadius: 6,
-                          spreadRadius: 3,
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 10,
+                          offset: const Offset(0, -2),
                         ),
                       ],
                     ),
-                    child: ListView.builder(
-                      controller: scrollController,
-                      itemCount: _shops.length,
-                      itemBuilder: (context, index) {
-                        final shop = _shops[index];
-                        return GestureDetector(
-                          onTap: () {
-                            LatLng shopPos = LatLng(shop['lat'], shop['lng']);
-                            _mapController?.animateCamera(
-                              CameraUpdate.newCameraPosition(
-                                CameraPosition(target: shopPos, zoom: 16),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        Container(
+                          width: 45,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.storefront_outlined,
+                                  color: Colors.deepPurple, size: 22),
+                              SizedBox(width: 8),
+                              Text(
+                                "Nearby Shops",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.deepPurple,
+                                ),
                               ),
-                            );
-                            _showShopDialog(shop['name'], shop);
-                          },
-                          child: Card(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 3,
-                            child: Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    shop['name'],
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.deepPurple,
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Expanded(
+                          child: ListView.builder(
+                            controller: scrollController,
+                            itemCount: _shops.length,
+                            itemBuilder: (context, index) {
+                              final shop = _shops[index];
+                              return GestureDetector(
+                                onTap: () {
+                                  LatLng shopPos = LatLng(shop['lat'], shop['lng']);
+                                  _mapController?.animateCamera(
+                                    CameraUpdate.newCameraPosition(
+                                      CameraPosition(target: shopPos, zoom: 16),
+                                    ),
+                                  );
+                                  _showShopDialog(shop['name'], shop);
+                                },
+                                child: Card(
+                                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  elevation: 3,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  shadowColor: Colors.deepPurple.withOpacity(0.3),
+                                  child: ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: Colors.deepPurple[100],
+                                      child: const Icon(Icons.store, color: Colors.deepPurple),
+                                    ),
+                                    title: Text(
+                                      shop['name'],
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.deepPurple,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      shop['description'],
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(color: Colors.grey),
+                                    ),
+                                    trailing: IconButton(
+                                      icon: const Icon(Icons.location_on, color: Colors.purple),
+                                      onPressed: () {
+                                        LatLng shopPos = LatLng(shop['lat'], shop['lng']);
+                                        _mapController?.animateCamera(
+                                          CameraUpdate.newCameraPosition(
+                                            CameraPosition(target: shopPos, zoom: 16),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    shop['description'],
-                                    style: const TextStyle(color: Colors.grey),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "City: ${shop['city']}, Phone: ${shop['phone']}",
-                                    style: const TextStyle(color: Colors.grey),
-                                  ),
-                                ],
-                              ),
-                            ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -301,34 +361,78 @@ class _CustomerPageState extends State<CustomerPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          _currentIndex == 0 ? "Profile" : "Explore Shops",
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-            color: Colors.white,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF7B1FA2), Color(0xFFAB47BC)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
         ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _currentIndex == 0 ? Icons.person_pin_circle : Icons.explore,
+              color: Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _currentIndex == 0 ? "My Profile" : "Explore Shops",
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
         centerTitle: true,
-        elevation: 2,
-        backgroundColor: Colors.purple[400],
+        elevation: 3,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
       ),
-      body: _sections[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Colors.purple[400],
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        backgroundColor: Colors.white,
-        elevation: 5,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
-          BottomNavigationBarItem(icon: Icon(Icons.map), label: "Shops Map"),
-        ],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        child: _sections[_currentIndex],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          selectedItemColor: Colors.deepPurple,
+          unselectedItemColor: Colors.grey,
+          showUnselectedLabels: true,
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          onTap: (index) => setState(() => _currentIndex = index),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              activeIcon: Icon(Icons.person, color: Colors.deepPurple),
+              label: "Profile",
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.map_outlined),
+              activeIcon: Icon(Icons.map, color: Colors.deepPurple),
+              label: "Shops Map",
+            ),
+          ],
+        ),
       ),
     );
   }

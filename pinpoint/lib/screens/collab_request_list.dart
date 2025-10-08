@@ -1,203 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:pinpoint/globals.dart';
-// import 'collab_request_store.dart';
-
-// class Shop {
-//   final String uid;
-//   final String name;
-//   final String email;
-//   final String phone;
-//   final String address;
-//   final String city;
-//   final String district;
-//   final String description;
-//   final String shopName;
-//   final double lat;
-//   final double lng;
-
-//   Shop({
-//     required this.uid,
-//     required this.name,
-//     required this.email,
-//     required this.phone,
-//     required this.address,
-//     required this.city,
-//     required this.district,
-//     required this.description,
-//     required this.shopName,
-//     required this.lat,
-//     required this.lng,
-//   });
-
-//   factory Shop.fromMap(Map<String, dynamic> data) {
-//     return Shop(
-//       uid: data['uid'] ?? '',
-//       name: data['name'] ?? '',
-//       email: data['email'] ?? '',
-//       phone: data['phone'] ?? '',
-//       address: data['address'] ?? '',
-//       city: data['city'] ?? '',
-//       district: data['district'] ?? '',
-//       description: data['description'] ?? '',
-//       shopName: data['shopName'] ?? '',
-//       lat: (data['shopLocation']?['lat'] ?? 0.0).toDouble(),
-//       lng: (data['shopLocation']?['lng'] ?? 0.0).toDouble(),
-//     );
-//   }
-// }
-
-// class ColobRequestList extends StatefulWidget {
-//   @override
-//   State<ColobRequestList> createState() => _ColobRequestListState();
-// }
-
-// class _ColobRequestListState extends State<ColobRequestList> {
-//   List<Shop> nearbyShops = [];
-//   List<Shop> collabShops = [];
-//   bool isLoading = true;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _loadShops();
-//   }
-
-//   Future<void> _loadShops() async {
-//     try {
-//       final city = currentUser?.city ?? '';
-//       final uid = currentUser?.uid ?? '';
-
-//       if (city.isEmpty || uid.isEmpty) {
-//         setState(() => isLoading = false);
-//         return;
-//       }
-
-//       final firestore = FirebaseFirestore.instance;
-
-//       // Get nearby shop UIDs
-//       final cityDoc = await firestore.collection('cities').doc(city).get();
-//       final nearbyUids = List<String>.from(cityDoc.data()?['shops'] ?? []);
-
-//       // Get collab shop UIDs
-//       final collabDoc = await firestore.collection('collabs').doc(uid).get();
-//       final collabUids = List<String>.from(collabDoc.data()?['shops'] ?? []);
-
-//       // Fetch store details
-//       final storesSnap = await firestore.collection('stores').get();
-//       final allStores = storesSnap.docs
-//           .map((e) => Shop.fromMap(e.data()))
-//           .toList();
-
-//       setState(() {
-//         nearbyShops = allStores
-//             .where((shop) => nearbyUids.contains(shop.uid) && shop.uid != uid)
-//             .toList();
-//         collabShops = allStores
-//             .where((shop) => collabUids.contains(shop.uid) && shop.uid != uid)
-//             .toList();
-//         isLoading = false;
-//       });
-//     } catch (e) {
-//       print("Error loading shops: $e");
-//       setState(() => isLoading = false);
-//     }
-//   }
-
-//   Widget _buildShopCard(Shop shop, BuildContext context) {
-//     return GestureDetector(
-//       onTap: () {
-//         Navigator.push(
-//           context,
-//           MaterialPageRoute(
-//             builder: (_) => CollobRequestStore(storeId: shop.uid),
-//           ),
-//         );
-//       },
-//       child: Card(
-//         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-//         margin: const EdgeInsets.symmetric(vertical: 8),
-//         color: Colors.white,
-//         elevation: 5,
-//         child: ListTile(
-//           leading: const Icon(Icons.store, color: Color(0xFF6A0DAD)),
-//           title: Text(
-//             shop.shopName.isNotEmpty ? shop.shopName : shop.name,
-//             style: const TextStyle(
-//               fontWeight: FontWeight.bold,
-//               color: Color(0xFF6A0DAD),
-//             ),
-//           ),
-//           subtitle: Text(shop.city, style: TextStyle(color: Colors.grey[700])),
-//           trailing: const Icon(
-//             Icons.arrow_forward_ios,
-//             color: Color(0xFF6A0DAD),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: const Color(0xFF6A0DAD),
-//       appBar: AppBar(
-//         title: const Text("Nearby Stores"),
-//         backgroundColor: const Color(0xFF6A0DAD),
-//         elevation: 0,
-//       ),
-//       body: isLoading
-//           ? const Center(child: CircularProgressIndicator(color: Colors.white))
-//           : SingleChildScrollView(
-//               padding: const EdgeInsets.all(12),
-//               child: Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 children: [
-//                   const Text(
-//                     "Your Collaborations",
-//                     style: TextStyle(
-//                       color: Colors.white,
-//                       fontSize: 20,
-//                       fontWeight: FontWeight.bold,
-//                     ),
-//                   ),
-//                   const SizedBox(height: 10),
-//                   if (collabShops.isEmpty)
-//                     const Text(
-//                       "No collaborations yet",
-//                       style: TextStyle(color: Colors.white70),
-//                     )
-//                   else
-//                     ...collabShops
-//                         .map((shop) => _buildShopCard(shop, context))
-//                         .toList(),
-//                   const SizedBox(height: 20),
-//                   const Text(
-//                     "Nearby Shops",
-//                     style: TextStyle(
-//                       color: Colors.white,
-//                       fontSize: 20,
-//                       fontWeight: FontWeight.bold,
-//                     ),
-//                   ),
-//                   const SizedBox(height: 10),
-//                   if (nearbyShops.isEmpty)
-//                     const Text(
-//                       "No nearby shops found",
-//                       style: TextStyle(color: Colors.white70),
-//                     )
-//                   else
-//                     ...nearbyShops
-//                         .map((shop) => _buildShopCard(shop, context))
-//                         .toList(),
-//                 ],
-//               ),
-//             ),
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pinpoint/globals.dart';
@@ -281,24 +81,17 @@ class _ColobRequestListState extends State<ColobRequestList> {
       }
 
       final firestore = FirebaseFirestore.instance;
-
-      // Load all shops from Firestore
       final storesSnap = await firestore.collection('stores').get();
-      final allStores = storesSnap.docs
-          .map((e) => Shop.fromMap(e.data()))
-          .toList();
+      final allStores = storesSnap.docs.map((e) => Shop.fromMap(e.data())).toList();
 
-      // Load nearby shop UIDs
       final cityDoc = await firestore.collection('cities').doc(city).get();
       final nearbyUids = List<String>.from(cityDoc.data()?['shops'] ?? []);
 
-      // Load collab data (maps with shop + status)
       final collabDoc = await firestore.collection('collabs').doc(uid).get();
       final collabData = List<Map<String, dynamic>>.from(
         collabDoc.data()?['shops'] ?? [],
       );
 
-      // Group by status
       Map<String, List<Shop>> grouped = {
         'Request Sent': [],
         'Incoming Request': [],
@@ -344,12 +137,10 @@ class _ColobRequestListState extends State<ColobRequestList> {
         }
       }
 
-      // Filter nearby shops (excluding those already in collabs)
       final collabUids = collabData.map((e) => e['shop']).toSet();
       final nearbyFiltered = allStores
           .where(
-            (shop) =>
-                nearbyUids.contains(shop.uid) && !collabUids.contains(shop.uid),
+            (shop) => nearbyUids.contains(shop.uid) && !collabUids.contains(shop.uid),
           )
           .toList();
 
@@ -391,90 +182,96 @@ class _ColobRequestListState extends State<ColobRequestList> {
     switch (status) {
       case 'Request Sent':
         actions = [
-          _actionButton(
-            "Cancel",
-            Icons.cancel,
-            Colors.red,
-            () => _updateCollabStatus(shop.uid, 'denied_by_me'),
-          ),
-          _actionButton(
-            "Request Again",
-            Icons.refresh,
-            Colors.orange,
-            () => _updateCollabStatus(shop.uid, 'requested_out'),
-          ),
+          _actionButton("Cancel", Icons.cancel_outlined, Colors.red,
+              () => _updateCollabStatus(shop.uid, 'denied_by_me')),
         ];
         break;
       case 'Incoming Request':
         actions = [
-          _actionButton(
-            "Accept",
-            Icons.check_circle,
-            Colors.green,
-            () => _updateCollabStatus(shop.uid, 'accepted_by_me'),
-          ),
-          _actionButton(
-            "Deny",
-            Icons.close,
-            Colors.red,
-            () => _updateCollabStatus(shop.uid, 'denied_by_me'),
-          ),
+          _actionButton("Accept", Icons.check_circle_outline, Colors.green,
+              () => _updateCollabStatus(shop.uid, 'accepted_by_me')),
+          _actionButton("Deny", Icons.close_rounded, Colors.red,
+              () => _updateCollabStatus(shop.uid, 'denied_by_me')),
         ];
         break;
       case 'Accepted':
         actions = [
-          _actionButton(
-            "Cancel",
-            Icons.cancel,
-            Colors.red,
-            () => _updateCollabStatus(shop.uid, 'denied_by_me'),
-          ),
+          _actionButton("Remove", Icons.block_rounded, Colors.red,
+              () => _updateCollabStatus(shop.uid, 'denied_by_me')),
         ];
         break;
       case 'Denied':
         actions = [
-          _actionButton(
-            "Request Again",
-            Icons.refresh,
-            Colors.orange,
-            () => _updateCollabStatus(shop.uid, 'requested_out'),
-          ),
+          _actionButton("Retry", Icons.refresh_rounded, Colors.orange,
+              () => _updateCollabStatus(shop.uid, 'requested_out')),
         ];
         break;
     }
 
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 3,
-      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-      child: ListTile(
-        leading: const Icon(Icons.store, color: Color(0xFF6A0DAD)),
-        title: Text(shop.shopName.isNotEmpty ? shop.shopName : shop.name),
-        subtitle: Text(shop.city),
-        trailing: Wrap(spacing: 6, children: actions),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CollobRequestStore(storeId: shop.uid),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 5,
+              offset: const Offset(0, 3),
             ),
-          );
-        },
+          ],
+        ),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: Colors.purple.shade50,
+            child: const Icon(Icons.storefront, color: Color(0xFF6A1B9A)),
+          ),
+          title: Text(
+            shop.shopName.isNotEmpty ? shop.shopName : shop.name,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          subtitle: Text(shop.city, style: const TextStyle(color: Colors.grey)),
+          trailing: Wrap(spacing: 4, children: actions),
+         onTap: () {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        return SingleChildScrollView(
+          controller: scrollController,
+          child: CollobRequestStore(storeId: shop.uid),
+        );
+      },
+    ),
+  );
+},
+
+        ),
       ),
     );
   }
 
-  Widget _actionButton(
-    String label,
-    IconData icon,
-    Color color,
-    VoidCallback onPressed,
-  ) {
-    return IconButton(
-      icon: Icon(icon, color: color),
-      tooltip: label,
-      onPressed: onPressed,
+  Widget _actionButton(String label, IconData icon, Color color, VoidCallback onPressed) {
+    return Tooltip(
+      message: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(30),
+        onTap: onPressed,
+        child: Padding(
+          padding: const EdgeInsets.all(6.0),
+          child: Icon(icon, color: color, size: 22),
+        ),
+      ),
     );
   }
 
@@ -482,17 +279,30 @@ class _ColobRequestListState extends State<ColobRequestList> {
     if (shops.isEmpty) return const SizedBox.shrink();
 
     final colorMap = {
-      'Request Sent': Colors.orange,
-      'Incoming Request': Colors.blueAccent,
-      'Accepted': Colors.green,
-      'Denied': Colors.redAccent,
+      'Request Sent': Colors.orange.shade600,
+      'Incoming Request': Colors.blue.shade600,
+      'Accepted': Colors.green.shade600,
+      'Denied': Colors.red.shade600,
     };
 
-    return Card(
-      color: colorMap[title]?.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      elevation: 3,
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: ExpansionTile(
+        leading: CircleAvatar(
+          backgroundColor: colorMap[title]!.withOpacity(0.1),
+          child: Icon(Icons.folder_special, color: colorMap[title]),
+        ),
         title: Text(
           title,
           style: TextStyle(
@@ -509,70 +319,97 @@ class _ColobRequestListState extends State<ColobRequestList> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F0FF),
+      backgroundColor: const Color(0xFFFBF9FF), // 🌤 slightly brighter lavender
       appBar: AppBar(
-        title: const Text("Collaboration Requests"),
-        backgroundColor: const Color(0xFF6A0DAD),
+        backgroundColor: Colors.white,
+        elevation: 3,
+        centerTitle: true,
+        title: const Text(
+          "Collaboration Requests",
+          style: TextStyle(
+            color: Color(0xFF4A148C),
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Color(0xFF4A148C)),
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF6A0DAD)),
+              child: CircularProgressIndicator(color: Color(0xFF6A1B9A)),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
+              physics: const BouncingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ...statusShops.entries
-                      .map(
-                        (entry) => _buildStatusSection(entry.key, entry.value),
-                      )
+                      .map((entry) => _buildStatusSection(entry.key, entry.value))
                       .toList(),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 25),
                   const Text(
                     "Available Nearby Shops",
                     style: TextStyle(
-                      color: Color(0xFF6A0DAD),
+                      color: Color(0xFF4A148C),
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 10),
                   if (nearbyShops.isEmpty)
-                    const Text("No nearby shops available.")
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text(
+                        "No nearby shops available.",
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
                   else
                     ...nearbyShops.map(
-                      (shop) => Card(
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 3,
-                        margin: const EdgeInsets.symmetric(vertical: 6),
-                        child: ListTile(
-                          leading: const Icon(
-                            Icons.store,
-                            color: Color(0xFF6A0DAD),
-                          ),
-                          title: Text(shop.shopName),
-                          subtitle: Text(shop.city),
-                          trailing: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF6A0DAD),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                      (shop) => Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 5,
+                                offset: const Offset(0, 3),
                               ),
+                            ],
+                          ),
+                          child: ListTile(
+                            leading: const CircleAvatar(
+                              backgroundColor: Color(0xFFEDE7F6),
+                              child: Icon(Icons.store, color: Color(0xFF6A1B9A)),
                             ),
-                            onPressed: () =>
-                                _updateCollabStatus(shop.uid, 'requested_out'),
-                            icon: const Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            label: const Text(
-                              "Request",
-                              style: TextStyle(color: Colors.white),
+                            title: Text(shop.shopName,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
+                            subtitle: Text(shop.city,
+                                style: const TextStyle(color: Colors.grey)),
+                            trailing: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD1C4E9), // 💜 lighter lavender
+                                foregroundColor: const Color(0xFF4A148C),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                elevation: 1.5,
+                              ),
+                              onPressed: () =>
+                                  _updateCollabStatus(shop.uid, 'requested_out'),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text(
+                                "Request",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
                             ),
                           ),
                         ),

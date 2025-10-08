@@ -1,4 +1,6 @@
-# app.py — cleaned version
+from app.routes.geofence import geofence_bp
+from app.routes.geofence import get_device_location  # Import your location retriever
+from app.routes.geofence import create_geofence_subscription  # Import your geofencing creator
 import os
 from flask import Flask, send_from_directory
 from flask_cors import CORS
@@ -7,10 +9,8 @@ from database import db
 from routes.campaign import campaign_bp
 from routes.poster import poster_bp
 from routes.shop import shop_bp
-# add these lines right after you import shop_bp in app.py (before registering)
-import inspect
-print("shop_bp from:", inspect.getfile(shop_bp.__class__) if hasattr(shop_bp, "__class__") else shop_bp)
-print("shop_bp object:", shop_bp)
+from routes.fencinglogic import fence_logic
+import psycopg2
 
 # Load environment variables
 load_dotenv(".env")
@@ -41,23 +41,65 @@ def serve_upload(filename):
     print("📤 Serving file:", full_path)
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
-# Register blueprints (only once)
+# Register blueprints
 app.register_blueprint(campaign_bp, url_prefix="/api/campaigns")
 app.register_blueprint(poster_bp, url_prefix="/api")
 app.register_blueprint(shop_bp, url_prefix="/shops")
+app.register_blueprint(geofence_bp, url_prefix="/api/geofence")
+app.register_blueprint(fence_logic, url_prefix="/api/geofence/callback")
 
-# Print URL map for debugging (inside app context so it has access to routes)
-with app.app_context():
-    print("---- /shops RULES ----")
-    for rule in app.url_map.iter_rules():
-        if rule.rule.startswith("/shops"):
-            print(rule, "methods:", sorted(rule.methods))
-    print("----------------------")
+------------------------------------------
+🔁 Function to implement geofence setup
+------------------------------------------
+def implement_geofence():
+    print("🚀 Initializing geofencing setup...")
 
+    # 1️⃣ Connect to Postgres manually
+    conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+    cursor = conn.cursor()
+
+    # 2️⃣ Fetch all devices
+    cursor.execute("SELECT uid, phone_number FROM devices;")
+    devices = cursor.fetchall()
+    print(f"📱 Found {len(devices)} devices to process...")
+
+    # 3️⃣ Loop through devices
+    for uid, phone_number in devices:
+        print(f"🔍 Processing device: {uid} ({phone_number})")
+
+        # Retrieve location
+        try:
+            location = get_device_location(phone_number)
+            if "error" in location:
+                print(f"❌ Failed to get location for {phone_number}: {location['error']}")
+                continue
+
+            lat = location["latitude"]
+            lon = location["longitude"]
+            radius = location.get("radius", 2000)
+
+            # 4️⃣ Create geofence subscription
+            create_res = create_geofence_subscription(phone_number, lat, lon, radius)
+            print(f"🛰️ Geofence created for {phone_number}: {create_res}")
+
+        except Exception as e:
+            print(f"⚠️ Error processing {phone_number}: {e}")
+
+    cursor.close()
+    conn.close()
+    print("✅ Geofencing setup completed for all devices.")
+
+
+# ------------------------------------------
+# Run Flask app
+# ------------------------------------------
 if __name__ == "__main__":
-    # Use env var to control debug on/off
     debug_mode = os.getenv("FLASK_DEBUG", "False").lower() in ("1", "true", "yes")
-    # Optionally set host/port via env
     host = os.getenv("FLASK_HOST", "0.0.0.0")
     port = int(os.getenv("FLASK_PORT", "5000"))
+
+    # ⚙️ Before starting the app, run geofence setup
+    with app.app_context():
+        implement_geofence()
+
     app.run(host=host, port=port, debug=debug_mode)
