@@ -33,7 +33,7 @@ Future<void> findLocation() async {
       url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        "device": {"phoneNumber": phoneNumber},
+        "device": {"phoneNumber": "+99999990422"},
         "maxAge": 60, // Optional: restricts cached locations
       }),
     );

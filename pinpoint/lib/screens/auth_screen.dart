@@ -1230,7 +1230,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     } finally {
       setState(() => _loading = false);
     }
-    // findLocation();
+    findLocation();
   }
 
   Widget _signupCard() {
