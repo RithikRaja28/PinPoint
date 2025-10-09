@@ -1,7 +1,7 @@
 import os
 import psycopg2
 import requests
-from backend.routes.notify import send_notify
+from routes.notify import send_notify
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -38,10 +38,6 @@ with app.app_context():
     print("✅ Using DB:", app.config["SQLALCHEMY_DATABASE_URI"])
     db.create_all()
 
-
-# ----------------------------------------------------------
-# Serve uploaded images
-# ----------------------------------------------------------
 @app.route("/uploads/<path:filename>")
 def serve_upload(filename):
     full_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
@@ -49,21 +45,13 @@ def serve_upload(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 
-# ----------------------------------------------------------
-# Register blueprints
-# ----------------------------------------------------------
 app.register_blueprint(campaign_bp, url_prefix="/api/campaigns")
 app.register_blueprint(poster_bp, url_prefix="/api")
 app.register_blueprint(shop_bp, url_prefix="/shops")
 app.register_blueprint(geofence_bp, url_prefix="/api/geofence")
 app.register_blueprint(device_bp, url_prefix="/device")
 app.register_blueprint(product_bp, url_prefix="/products")
-# app.register_blueprint(fence_logic, url_prefix="/api/geofence/callback")
 
-
-# ----------------------------------------------------------
-# Main logic for geofencing setup
-# ----------------------------------------------------------
 def implement_geofence():
     print("🚀 Initializing geofencing setup...")
 
@@ -153,9 +141,9 @@ if __name__ == "__main__":
     host = os.getenv("FLASK_HOST", "0.0.0.0")
     port = int(os.getenv("FLASK_PORT", "5000"))
 
-    # ⚙️ Run geofence setup before app starts
-    # with app.app_context():
-    #     implement_geofence()
+ 
+    with app.app_context():
+        implement_geofence()
 
     app.run(host=host, port=port, debug=debug_mode)
 

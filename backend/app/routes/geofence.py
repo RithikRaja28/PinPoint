@@ -1,4 +1,4 @@
-from backend.routes.verify_number import verify_number
+from routes.verify_number import verify_number
 from flask import Blueprint, request, jsonify
 from ..nokia_client import (
     verify_location_nokia,

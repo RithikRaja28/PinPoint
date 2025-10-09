@@ -80,17 +80,13 @@ from google.oauth2 import service_account
 import google.auth.transport.requests
 import firebase_admin
 from firebase_admin import credentials, firestore
-
-# ----------------------------
-# 🔧 CONFIGURATION
-# ----------------------------
-SERVICE_ACCOUNT_FILE = "serviceAccountKey.json"  # Path to Firebase service account key
+import os
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Gets current file’s directory
+SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, "serviceAccountKey.json") # Path to Firebase service account key
 PROJECT_ID = "pinpoint-e02f5"                   # Your Firebase project ID
 FCM_ENDPOINT = f"https://fcm.googleapis.com/v1/projects/{PROJECT_ID}/messages:send"
 
-# ----------------------------
-# 🔥 Initialize Firestore
-# ----------------------------
+
 if not firebase_admin._apps:
     cred = credentials.Certificate(SERVICE_ACCOUNT_FILE)
     firebase_admin.initialize_app(cred)
@@ -98,9 +94,6 @@ if not firebase_admin._apps:
 db = firestore.client()
 
 
-# ----------------------------
-# 🧩 ACCESS TOKEN GENERATOR
-# ----------------------------
 def get_access_token():
     """Generate OAuth2 access token from Firebase service account credentials."""
     credentials = service_account.Credentials.from_service_account_file(
@@ -112,9 +105,6 @@ def get_access_token():
     return credentials.token
 
 
-# ----------------------------
-# 🚀 PUSH NOTIFICATION FUNCTION
-# ----------------------------
 def send_fcm_message(token, title, body, data=None, image_url=None):
     """Send push notification using FCM HTTP v1 API (with optional image)."""
     access_token = get_access_token()
@@ -145,9 +135,6 @@ def send_fcm_message(token, title, body, data=None, image_url=None):
     return response.json()
 
 
-# ----------------------------
-# 🔔 FIRESTORE → NOTIFY FUNCTION
-# ----------------------------
 def send_notify(phone_no, title, imageurl):
     """Fetch FCM token for the phone number and send notification."""
     try:
@@ -182,6 +169,3 @@ def send_notify(phone_no, title, imageurl):
         print(f"❌ Error sending notification: {e}")
         return {"success": False, "error": str(e)}
 
-
-# ----------------------------
-# 🧪 TEST CALL
