@@ -146,6 +146,7 @@ PinPoint inverts this model to use **user-based geofencing**:
 
 ---
 
+
 ## 📈 Market Analysis
 
 **PinPoint** taps into the growing hyperlocal marketing ecosystem by merging telecom data, AI, and geolocation intelligence to create a new channel of direct engagement.
