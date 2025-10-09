@@ -14,7 +14,7 @@ String? FCM_TOKEN;
 final GlobalKey<FormState> signupFormKey = GlobalKey<FormState>();
 final GlobalKey<FormState> loginFormKey = GlobalKey<FormState>();
 // 🛰️ Backend API Endpoint
-const String endpoint1 = "http://192.168.1.11:5000";
+const String endpoint1 = "http://10.82.69.61:5000";
 // 📍 Location Details
 double? currentLat;
 double? currentLong;
@@ -41,8 +41,11 @@ Future<void> updateFcmToken(String? fcmToken, String? phone) async {
 
 /// 🌐 Fetch latest location from server
 Future<void> findLocation() async {
+  print(
+    "entered ======================================================================",
+  );
   final url = Uri.parse('$endpoint1/api/geofence/location/retrieve');
-  final phoneNumber = "+91${currentUser?.phone ?? '99999990422'}";
+  final phoneNumber = "+${currentUser?.phone ?? '91123456666'}";
 
   try {
     final response = await http.post(

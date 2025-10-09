@@ -11,6 +11,8 @@ import 'package:pinpoint/screens/community_feed_screen.dart';
 import 'package:pinpoint/screens/customer_screen.dart';
 import 'package:pinpoint/globals.dart';
 import 'package:pinpoint/user_model.dart';
+import 'package:pinpoint/screens/location_simulator_screen.dart';
+
 
 class CollabNavBar extends StatefulWidget {
   const CollabNavBar({super.key});
@@ -400,36 +402,60 @@ class _CollabNavBarState extends State<CollabNavBar> {
                           fontWeight: FontWeight.bold,
                           fontSize: 20)),
                 ]),
-                Row(children: [
-                  if (user != null)
-                    GestureDetector(
-                      onTap: () => setState(() => _selectedIndex = 2),
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Colors.white.withOpacity(0.25),
-                        child: Text(
-                            user.name.isNotEmpty
-                                ? user.name[0].toUpperCase()
-                                : "?",
-                            style: const TextStyle(
+                Row(
+                    children: [
+                      if (user != null) ...[
+                        GestureDetector(
+                          onTap: () => setState(() => _selectedIndex = 2),
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.white.withOpacity(0.25),
+                            child: Text(
+                              user.name.isNotEmpty
+                                  ? user.name[0].toUpperCase()
+                                  : "?",
+                              style: const TextStyle(
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold)),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: "Simulate Location",
+                          icon: const Icon(
+                            Icons.my_location,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            // Navigate to Location Simulator Screen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const LocationSimulatorScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                      const SizedBox(width: 10),
+                      IconButton(
+                        tooltip: "Logout",
+                        icon: const Icon(Icons.logout, color: Colors.white),
+                        onPressed: () async {
+                          await FirebaseAuth.instance.signOut();
+                          currentUser = null;
+                          if (context.mounted) {
+                            Navigator.of(
+                              context,
+                            ).pushNamedAndRemoveUntil('/', (r) => false);
+                          }
+                        },
                       ),
-                    ),
-                  const SizedBox(width: 10),
-                  IconButton(
-                    tooltip: "Logout",
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    onPressed: () async {
-                      await FirebaseAuth.instance.signOut();
-                      currentUser = null;
-                      if (context.mounted) {
-                        Navigator.of(context)
-                            .pushNamedAndRemoveUntil('/', (r) => false);
-                      }
-                    },
+                    ],
                   ),
-                ]),
               ]),
             ),
           ),

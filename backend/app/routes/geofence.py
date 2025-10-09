@@ -321,7 +321,7 @@ def get_device_connectivity_status(phone_number):
 
 
 
-@geofence_bp.route("/location/cstatus",method=["POST"])
+@geofence_bp.route("/location/cstatus",methods=["POST"])
 def get_connectivity_status():
     data = request.get_json()
     phone_number=data["phoneNumber"]
@@ -345,6 +345,7 @@ def get_connectivity_status():
 # ---------------------------------------------------------------------
 @geofence_bp.route("/location/retrieve", methods=["POST"])
 def retrieve_location_and_status():
+    print("🚀 Starting combined location, subscription, and status retrieval...")
     if not request.is_json:
         return jsonify({
             "success": False,

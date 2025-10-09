@@ -1,13 +1,13 @@
 
 import json
-from backend.app.nokia_client import create_geofence_subscription
-from backend.app.routes.geofence import get_device_connectivity_status, get_device_location
+from app.nokia_client import create_geofence_subscription
+from app.routes.geofence import get_device_connectivity_status, get_device_location
 from flask import Blueprint, request, jsonify, current_app
 from database import db
 import os
 import psycopg2
-
-os.load_dotenv(".env")
+from dotenv import load_dotenv
+load_dotenv(".env")
 
 fence_logic = Blueprint("fence_logic", __name__)
 

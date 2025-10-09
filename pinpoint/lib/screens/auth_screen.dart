@@ -1154,6 +1154,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _signInWithEmailPassword() async {
+    findLocation();
     if (!loginFormKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
