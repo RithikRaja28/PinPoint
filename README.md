@@ -120,9 +120,14 @@ PinPoint inverts this model to use **user-based geofencing**:
 ---
 ## Network API Impact in our Product
 
-| **GeoFencing API** | **Location Retrieval & Device Connectivity API** | **Location Retrieval Response** |
-|---------------------|--------------------------------------------------|----------------------------------|
-| ![GeoFencing API](https://github.com/user-attachments/assets/67bf4cc3-bf48-4b4b-b7dc-1763c6b1ffdc) | ![Location Retrieval & Connectivity](https://github.com/user-attachments/assets/4bf639f2-8908-4530-8458-80f332f7b367) | ![Location Retrieval Response](https://github.com/user-attachments/assets/927f9612-08ba-4ef4-a93c-c74db03bc7d9) |
+| **GeoFencing API** | **Location Retrieval & Device Connectivity API** |
+|--------------------|--------------------------------------------------|
+| ![GeoFencing API](https://github.com/user-attachments/assets/67bf4cc3-bf48-4b4b-b7dc-1763c6b1ffdc) | ![Location Retrieval & Connectivity](https://github.com/user-attachments/assets/4bf639f2-8908-4530-8458-80f332f7b367) |
+
+| **Location Retrieval Response** | **Number Verification API** |
+|--------------------------------|-----------------------------|
+| ![Location Retrieval Response](https://github.com/user-attachments/assets/927f9612-08ba-4ef4-a93c-c74db03bc7d9) | ![WhatsApp Image 2025-10-09 at 15 17 16_73afbe9a](https://github.com/user-attachments/assets/0b49b44b-0430-4228-8f2e-59f3485f1193) |
+
 
 ---
 ## 🖼️ Product Snapshots
