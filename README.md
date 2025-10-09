@@ -72,7 +72,6 @@ PinPoint inverts this model to use **user-based geofencing**:
 | **Geofencing Subscription API** | Creates dynamic virtual boundaries around users or shops | Triggers promotional alerts when the user enters or exits a live zone. |
 | **Device Reachability API** | Detects if the user’s device is online or connected to the network | Sends offers via push notifications when connected or via SMS if offline. |
 | **Device Verification API** | Validates registered devices for authenticity | Prevents fraudulent or duplicate participation in campaigns. |
-| **SIM Swap Detection API** | Identifies unauthorized SIM changes | Protects offers from misuse and ensures data integrity. |
 
 ---
 
