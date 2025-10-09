@@ -301,7 +301,6 @@ class CampaignApp extends StatelessWidget {
         '/owner_products': (ctx) => ProductListOwner(),
         '/product_edit': (ctx) => ProductEditScreen(),
       },
-      initialRoute: '/',
     );
   }
 }
