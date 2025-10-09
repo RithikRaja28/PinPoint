@@ -1,5 +1,7 @@
 import os
 import psycopg2
+import requests
+from backend.routes.notify import send_notify
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -115,7 +117,26 @@ def implement_geofence():
                 print(f"🛰️ Geofence created for {phone_number}: {create_res}")
 
                 #shops descovery logic create functions discover nearby shops so we can use for update geofence also
+                base_url = "http://10.43.38.225:5000/shops//active_campaigns_nearby"
+                params = {
+                    "lat": current_lat,
+                    "lon": current_lon,
+                    "radius": radius
+                }
 
+                try:
+                    response = requests.get(base_url, params=params, timeout=10)
+                    response.raise_for_status()  # Raise error for bad responses (4xx, 5xx)
+                    data = response.json()
+                    for item in data["items"]:
+                        campaign=item["campaign"]
+                        poster_path=os.getenv("ENDPOINT")+"/"+campaign["poster_path"]
+                        campaign_title=campaign["campaign_title"]
+                        send_notify(phone_number,campaign_title,poster_path)
+            
+                except requests.exceptions.RequestException as e:
+                    print("❌ Error calling API:", e)
+                    return None
                 #once shops discovered, iterate shops, find campains for that shop, invoke pushnotification to that user device using the FCM code
 
             except Exception as inner_e:
@@ -128,10 +149,6 @@ def implement_geofence():
     except Exception as outer_e:
         print(f"❌ Error connecting to database or initializing geofence: {outer_e}")
 
-
-# ----------------------------------------------------------
-# Run Flask app
-# ----------------------------------------------------------
 if __name__ == "__main__":
     debug_mode = os.getenv("FLASK_DEBUG", "False").lower() in ("1", "true", "yes")
     host = os.getenv("FLASK_HOST", "0.0.0.0")

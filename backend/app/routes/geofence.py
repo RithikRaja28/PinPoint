@@ -1,3 +1,4 @@
+from backend.routes.verify_number import verify_number
 from flask import Blueprint, request, jsonify
 from ..nokia_client import (
     verify_location_nokia,
@@ -541,3 +542,16 @@ def redeem_offer():
             "sim_changed": changed,
             "message": f"❌ Redemption Denied: {reason}"
         }), 403
+    
+    
+# ✅ Flask API Endpoint
+@geofence_bp.route('/verifynumber', methods=['GET'])
+def verify_number_endpoint():
+    phone_number = request.args.get('phone_number')
+    redirect_url = request.args.get('redirect_url')
+
+    if not phone_number or not redirect_url:
+        return jsonify({"success": False, "error": "Missing parameters"}), 400
+
+    result = verify_number(phone_number, redirect_url)
+    return jsonify({"success": bool(result)}), 200
