@@ -28,12 +28,12 @@ class CollobRequestStore extends StatelessWidget {
           }, SetOptions(merge: true));
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Collaboration request sent!")),
+        SnackBar(content: translateText("Collaboration request sent!")),
       );
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error sending request: $e")),
+        SnackBar(content: translateText("Error sending request: $e")),
       );
     }
   }
@@ -53,12 +53,11 @@ class CollobRequestStore extends StatelessWidget {
         }
 
         if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const SizedBox(
+          return SizedBox(
             height: 200,
             child: Center(
-              child: Text(
+              child: translateText(
                 "Store not found.",
-                style: TextStyle(fontSize: 18),
               ),
             ),
           );
@@ -86,7 +85,7 @@ class CollobRequestStore extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
+                // Header Handle
                 Center(
                   child: Container(
                     width: 50,
@@ -99,6 +98,7 @@ class CollobRequestStore extends StatelessWidget {
                   ),
                 ),
 
+                // Header Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -118,14 +118,11 @@ class CollobRequestStore extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 10),
-                Text(
-                  description,
-                  style: const TextStyle(fontSize: 15, color: Colors.black87),
-                ),
+                translateText(description),
                 const SizedBox(height: 15),
                 Divider(color: Colors.grey.shade300),
 
-                // Details List
+                // Store Info
                 _infoTile(Icons.location_on, "$address, $district, $city"),
                 _infoTile(Icons.email, email),
                 _infoTile(Icons.phone, phone),
@@ -135,7 +132,7 @@ class CollobRequestStore extends StatelessWidget {
 
                 const SizedBox(height: 25),
 
-                // Buttons
+                // Action Buttons
                 Row(
                   children: [
                     Expanded(
@@ -143,12 +140,9 @@ class CollobRequestStore extends StatelessWidget {
                         onPressed: () =>
                             sendCollabRequest(context, store['uid']),
                         icon: const Icon(Icons.handshake_rounded, size: 20),
-                        label: const Text(
-                          "Send Request",
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
+                        label: translateText("Send Request"),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD1C4E9), // Light lavender
+                          backgroundColor: const Color(0xFFD1C4E9),
                           foregroundColor: const Color(0xFF4A148C),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -163,7 +157,7 @@ class CollobRequestStore extends StatelessWidget {
                       child: OutlinedButton.icon(
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.cancel_outlined),
-                        label: const Text("Cancel"),
+                        label: translateText("Cancel"),
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: Color(0xFF4A148C)),
                           foregroundColor: const Color(0xFF4A148C),
@@ -194,9 +188,8 @@ class CollobRequestStore extends StatelessWidget {
           Icon(icon, color: const Color(0xFF6A1B9A)),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
+            child: translateText(
               text,
-              style: const TextStyle(fontSize: 15.5, color: Colors.black87),
             ),
           ),
         ],

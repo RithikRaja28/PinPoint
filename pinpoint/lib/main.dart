@@ -153,6 +153,8 @@ import 'package:pinpoint/screens/dashboard_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:pinpoint/screens/product_edit_screen.dart';
+import 'package:pinpoint/screens/product_list_owner.dart';
 import 'package:pinpoint/screens/splash_screen.dart';
 import 'package:pinpoint/services/phone_auth_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -294,6 +296,8 @@ class CampaignApp extends StatelessWidget {
         '/customer': (ctx) => CustomerPage(),
         '/colab_request': (ctx) => ColobRequestList(),
         '/shops': (ctx) => const ShopsListScreen(),
+        '/owner_products': (ctx) => ProductListOwner(),
+        '/product_edit': (ctx) => ProductEditScreen(),
       },
     );
   }

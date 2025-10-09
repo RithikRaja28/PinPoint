@@ -1,4 +1,3 @@
-
 import os
 import psycopg2
 from flask import Flask, send_from_directory
@@ -10,7 +9,10 @@ from routes.poster import poster_bp
 from routes.shop import shop_bp
 from routes.fencinglogic import fence_logic
 from app.routes.geofence import geofence_bp, get_device_connectivity_status, get_device_location, create_geofence_subscription
-
+from routes.devices import device_bp
+from routes.product import product_bp
+# from routes.fencinglogic import fence_logic
+from app.routes.geofence import geofence_bp, get_device_location, create_geofence_subscription
 
 # Load environment variables
 load_dotenv(".env")
@@ -52,7 +54,9 @@ app.register_blueprint(campaign_bp, url_prefix="/api/campaigns")
 app.register_blueprint(poster_bp, url_prefix="/api")
 app.register_blueprint(shop_bp, url_prefix="/shops")
 app.register_blueprint(geofence_bp, url_prefix="/api/geofence")
-app.register_blueprint(fence_logic, url_prefix="/api/geofence/callback")
+app.register_blueprint(device_bp, url_prefix="/device")
+app.register_blueprint(product_bp, url_prefix="/products")
+# app.register_blueprint(fence_logic, url_prefix="/api/geofence/callback")
 
 
 # ----------------------------------------------------------
@@ -137,3 +141,5 @@ if __name__ == "__main__":
     #     implement_geofence()
 
     app.run(host=host, port=port, debug=debug_mode)
+
+

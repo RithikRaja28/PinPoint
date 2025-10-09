@@ -21,6 +21,16 @@ class _BusinessProfileState extends State<BusinessProfile> {
     {"name": "Other", "icon": Icons.category},
   ];
 
+  // ✅ Simple helper that directly returns translated String
+  Future<String> translateString(String text) async {
+    try {
+      final translated = await globalTranslator.translate(text, to: selectedLang);
+      return translated.text;
+    } catch (_) {
+      return text;
+    }
+  }
+
   Widget _buildInfoTile(IconData icon, String label, String value) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
@@ -44,14 +54,7 @@ class _BusinessProfileState extends State<BusinessProfile> {
           padding: const EdgeInsets.all(10),
           child: Icon(icon, color: Colors.deepPurple.shade700, size: 22),
         ),
-        title: Text(
-          label,
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
-            color: Colors.black87,
-          ),
-        ),
+        title: translateText(label),
         subtitle: Text(
           value.isNotEmpty ? value : 'Not provided',
           style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
@@ -64,11 +67,39 @@ class _BusinessProfileState extends State<BusinessProfile> {
   Widget build(BuildContext context) {
     final user = currentUser;
     if (user == null) {
-      return const Center(child: Text("No business data found"));
+      return Center(child: translateText("No business data found"));
     }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 2,
+        centerTitle: true,
+        title: translateText("Business Profile"),
+        iconTheme: const IconThemeData(color: Color(0xFF4A148C)),
+        actions: [
+          DropdownButton<String>(
+            value: selectedLang,
+            underline: const SizedBox(),
+            icon: const Icon(Icons.language, color: Color(0xFF4A148C)),
+            dropdownColor: Colors.white,
+            items: ['en', 'es', 'fr', 'de', 'hi', 'ta'].map((lang) {
+              return DropdownMenuItem<String>(
+                value: lang,
+                child: Text(
+                  lang.toUpperCase(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) setState(() => selectedLang = value);
+            },
+          ),
+          const SizedBox(width: 10),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
@@ -139,10 +170,7 @@ class _BusinessProfileState extends State<BusinessProfile> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      "Welcome back 👋",
-                      style: TextStyle(fontSize: 15, color: Colors.white70),
-                    ),
+                    translateText("Welcome back 👋"),
                   ],
                 ),
               ),
@@ -156,14 +184,7 @@ class _BusinessProfileState extends State<BusinessProfile> {
                   children: [
                     const Icon(Icons.store, color: Colors.deepPurple),
                     const SizedBox(width: 8),
-                    Text(
-                      "Business Information",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.deepPurple.shade800,
-                      ),
-                    ),
+                    translateText("Business Information"),
                   ],
                 ),
               ),
@@ -186,14 +207,7 @@ class _BusinessProfileState extends State<BusinessProfile> {
                   children: [
                     const Icon(Icons.category, color: Colors.deepPurple),
                     const SizedBox(width: 8),
-                    Text(
-                      "Business Category",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.deepPurple.shade800,
-                      ),
-                    ),
+                    translateText("Business Category"),
                   ],
                 ),
               ),
@@ -216,44 +230,46 @@ class _BusinessProfileState extends State<BusinessProfile> {
                     ),
                   ],
                 ),
-                child: DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    labelText: "Select Category",
-                    labelStyle: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  value: _selectedCategory,
-                  items: _categories
-                      .map<DropdownMenuItem<String>>(
-                        (cat) => DropdownMenuItem<String>(
-                          value: cat["name"],
-                          child: Row(
-                            children: [
-                              Icon(
-                                cat["icon"],
-                                color: Colors.deepPurple.shade700,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                cat["name"],
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ],
-                          ),
+                child: FutureBuilder<String>(
+                  future: translateString("Select Category"),
+                  builder: (context, snapshot) {
+                    return DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        labelText: snapshot.data ?? "Select Category",
+                        labelStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
-                      )
-                      .toList(),
-                  onChanged: (val) {
-                    setState(() => _selectedCategory = val!);
+                      ),
+                      value: _selectedCategory,
+                      items: _categories
+                          .map<DropdownMenuItem<String>>(
+                            (cat) => DropdownMenuItem<String>(
+                              value: cat["name"],
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    cat["icon"],
+                                    color: Colors.deepPurple.shade700,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  translateText(cat["name"]),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) {
+                        setState(() => _selectedCategory = val!);
+                      },
+                      icon: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Colors.deepPurple.shade600,
+                      ),
+                    );
                   },
-                  icon: Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Colors.deepPurple.shade600,
-                  ),
                 ),
               ),
 
@@ -269,9 +285,8 @@ class _BusinessProfileState extends State<BusinessProfile> {
                     onPressed: () async {
                       await FirebaseAuth.instance.signOut();
                       currentUser = null;
-                      Navigator.of(
-                        context,
-                      ).pushNamedAndRemoveUntil('/', (route) => false);
+                      Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/', (route) => false);
                     },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -282,14 +297,7 @@ class _BusinessProfileState extends State<BusinessProfile> {
                       backgroundColor: const Color(0xFF7E57C2),
                       foregroundColor: Colors.white,
                     ),
-                    label: const Text(
-                      "Sign Out",
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                    label: translateText("Sign Out"),
                   ),
                 ),
               ),

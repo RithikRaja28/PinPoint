@@ -64,6 +64,8 @@ class _ColobRequestListState extends State<ColobRequestList> {
   };
   List<Shop> nearbyShops = [];
 
+  final List<String> languages = ['en', 'es', 'fr', 'de', 'hi', 'ta'];
+
   @override
   void initState() {
     super.initState();
@@ -82,7 +84,8 @@ class _ColobRequestListState extends State<ColobRequestList> {
 
       final firestore = FirebaseFirestore.instance;
       final storesSnap = await firestore.collection('stores').get();
-      final allStores = storesSnap.docs.map((e) => Shop.fromMap(e.data())).toList();
+      final allStores =
+          storesSnap.docs.map((e) => Shop.fromMap(e.data())).toList();
 
       final cityDoc = await firestore.collection('cities').doc(city).get();
       final nearbyUids = List<String>.from(cityDoc.data()?['shops'] ?? []);
@@ -140,7 +143,8 @@ class _ColobRequestListState extends State<ColobRequestList> {
       final collabUids = collabData.map((e) => e['shop']).toSet();
       final nearbyFiltered = allStores
           .where(
-            (shop) => nearbyUids.contains(shop.uid) && !collabUids.contains(shop.uid),
+            (shop) =>
+                nearbyUids.contains(shop.uid) && !collabUids.contains(shop.uid),
           )
           .toList();
 
@@ -236,32 +240,32 @@ class _ColobRequestListState extends State<ColobRequestList> {
           ),
           subtitle: Text(shop.city, style: const TextStyle(color: Colors.grey)),
           trailing: Wrap(spacing: 4, children: actions),
-         onTap: () {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => DraggableScrollableSheet(
-      initialChildSize: 0.75,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return SingleChildScrollView(
-          controller: scrollController,
-          child: CollobRequestStore(storeId: shop.uid),
-        );
-      },
-    ),
-  );
-},
-
+          onTap: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => DraggableScrollableSheet(
+                initialChildSize: 0.75,
+                minChildSize: 0.5,
+                maxChildSize: 0.95,
+                expand: false,
+                builder: (context, scrollController) {
+                  return SingleChildScrollView(
+                    controller: scrollController,
+                    child: CollobRequestStore(storeId: shop.uid),
+                  );
+                },
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _actionButton(String label, IconData icon, Color color, VoidCallback onPressed) {
+  Widget _actionButton(
+      String label, IconData icon, Color color, VoidCallback onPressed) {
     return Tooltip(
       message: label,
       child: InkWell(
@@ -303,14 +307,7 @@ class _ColobRequestListState extends State<ColobRequestList> {
           backgroundColor: colorMap[title]!.withOpacity(0.1),
           child: Icon(Icons.folder_special, color: colorMap[title]),
         ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: colorMap[title],
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: translateText(title),
         children: shops.map((shop) => _buildShopTile(shop, title)).toList(),
       ),
     );
@@ -319,20 +316,34 @@ class _ColobRequestListState extends State<ColobRequestList> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFBF9FF), // 🌤 slightly brighter lavender
+      backgroundColor: const Color(0xFFFBF9FF),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 3,
         centerTitle: true,
-        title: const Text(
-          "Collaboration Requests",
-          style: TextStyle(
-            color: Color(0xFF4A148C),
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
-          ),
-        ),
+        title: translateText("Collaboration Requests"),
         iconTheme: const IconThemeData(color: Color(0xFF4A148C)),
+        actions: [
+          DropdownButton<String>(
+            value: selectedLang,
+            underline: const SizedBox(),
+            icon: const Icon(Icons.language, color: Color(0xFF4A148C)),
+            dropdownColor: Colors.white,
+            items: ['en', 'es', 'fr', 'de', 'hi', 'ta'].map((lang) {
+              return DropdownMenuItem<String>(
+                value: lang,
+                child: Text(
+                  lang.toUpperCase(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) setState(() => selectedLang = value);
+            },
+          ),
+          const SizedBox(width: 10),
+        ],
       ),
       body: isLoading
           ? const Center(
@@ -348,22 +359,12 @@ class _ColobRequestListState extends State<ColobRequestList> {
                       .map((entry) => _buildStatusSection(entry.key, entry.value))
                       .toList(),
                   const SizedBox(height: 25),
-                  const Text(
-                    "Available Nearby Shops",
-                    style: TextStyle(
-                      color: Color(0xFF4A148C),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  translateText("Available Nearby Shops"),
                   const SizedBox(height: 10),
                   if (nearbyShops.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Text(
-                        "No nearby shops available.",
-                        style: TextStyle(color: Colors.grey),
-                      ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: translateText("No nearby shops available."),
                     )
                   else
                     ...nearbyShops.map(
@@ -393,7 +394,7 @@ class _ColobRequestListState extends State<ColobRequestList> {
                                 style: const TextStyle(color: Colors.grey)),
                             trailing: ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD1C4E9), // 💜 lighter lavender
+                                backgroundColor: const Color(0xFFD1C4E9),
                                 foregroundColor: const Color(0xFF4A148C),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
@@ -403,13 +404,7 @@ class _ColobRequestListState extends State<ColobRequestList> {
                               onPressed: () =>
                                   _updateCollabStatus(shop.uid, 'requested_out'),
                               icon: const Icon(Icons.add, size: 18),
-                              label: const Text(
-                                "Request",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
+                              label: translateText("Request"),
                             ),
                           ),
                         ),

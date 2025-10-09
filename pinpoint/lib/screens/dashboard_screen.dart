@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:pinpoint/globals.dart'; // 🟢 Import for translateText and selectedLang
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final List<String> languages = ['en', 'es', 'fr', 'de', 'hi', 'ta'];
 
   @override
   Widget build(BuildContext context) {
@@ -24,72 +32,89 @@ class DashboardScreen extends StatelessWidget {
     final end = DateTime.parse(campaign['end']);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F3FE),
+      extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFFF9F7FF),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "Campaign Dashboard",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-            letterSpacing: 0.6,
-            color: Color(0xFF2C1A63),
-          ),
-        ),
+        title: translateText("📊 Campaign Dashboard"), // 🟢 Translated title
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline,
-                color: Color(0xFF6A00F8), size: 28),
-            tooltip: 'Create campaign',
-            onPressed: () =>
-                Navigator.of(context).pushReplacementNamed('/create_campaign'),
+          DropdownButton<String>(
+            value: selectedLang,
+            underline: const SizedBox(),
+            icon: const Icon(Icons.language, color: Colors.deepPurple),
+            dropdownColor: Colors.white,
+            items: languages.map((lang) {
+              return DropdownMenuItem<String>(
+                value: lang,
+                child: Text(
+                  lang.toUpperCase(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              );
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                setState(() => selectedLang = value);
+              }
+            },
           ),
+          const SizedBox(width: 10),
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: screenSize.width * 0.04,
-            vertical: screenSize.height * 0.02,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFF9F7FF), Color(0xFFEDE7F6)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _headerCard(screenSize, campaign, start, end, context),
-              const SizedBox(height: 25),
-              _horizontalScrollStats(screenSize),
-              const SizedBox(height: 25),
-              _overviewCard(screenSize, context, campaign, start, end),
-              const SizedBox(height: 25),
-              _analyticsCard(screenSize),
-              const SizedBox(height: 25),
-              _communityCard(context, screenSize),
-            ],
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: screenSize.width * 0.05,
+              vertical: screenSize.height * 0.02,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _headerCard(screenSize, campaign, start, end),
+                const SizedBox(height: 25),
+                _horizontalScrollStats(screenSize),
+                const SizedBox(height: 25),
+                _overviewCard(screenSize, campaign, start, end),
+                const SizedBox(height: 25),
+                _analyticsCard(screenSize),
+                const SizedBox(height: 25),
+                _communityCard(context, screenSize),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // ====== Header with Neon Active Badge ======
-  Widget _headerCard(Size screenSize, Map<String, dynamic> campaign,
-      DateTime start, DateTime end, BuildContext context) {
-    return Container(
+  // HEADER CARD
+  Widget _headerCard(
+      Size screenSize, Map<String, dynamic> campaign, DateTime start, DateTime end) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
       width: double.infinity,
       padding: EdgeInsets.all(screenSize.width * 0.05),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(25),
         gradient: const LinearGradient(
-          colors: [Color(0xFF7C4DFF), Color(0xFF9C4DFF)],
+          colors: [Color(0xFF7C4DFF), Color(0xFFB388FF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.deepPurple.withOpacity(0.3),
-            blurRadius: 16,
+            color: Colors.deepPurple.withOpacity(0.25),
+            blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
@@ -97,77 +122,73 @@ class DashboardScreen extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: screenSize.width * 0.17,
-            height: screenSize.width * 0.17,
+            width: screenSize.width * 0.18,
+            height: screenSize.width * 0.18,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16),
+              color: Colors.white.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(Icons.campaign_rounded,
-                color: Colors.white, size: 40),
+            child: const Icon(Icons.campaign, color: Colors.white, size: 42),
           ),
           SizedBox(width: screenSize.width * 0.05),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Recent Campaign",
-                    style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                        letterSpacing: 0.3)),
-                const SizedBox(height: 4),
-                Text(campaign['title'],
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold)),
+                translateText("Recent Campaign"),
+                const SizedBox(height: 6),
+                Text(
+                  campaign['title'],
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold),
+                ),
                 Text('${campaign['offer']} • ${campaign['radius_km']} km',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                    style: const TextStyle(color: Colors.white70, fontSize: 14)),
               ],
             ),
           ),
-          _neonBadge("ACTIVE"),
+          _softActiveBadge("ACTIVE"),
         ],
       ),
     );
   }
 
-  // Neon Active Badge
-  Widget _neonBadge(String text) {
+  // ACTIVE BADGE
+  Widget _softActiveBadge(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF00E676), Color(0xFF69F0AE)],
+          colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
         ),
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.greenAccent.withOpacity(0.6),
-            blurRadius: 12,
+            color: Colors.green.withOpacity(0.3),
+            blurRadius: 10,
             spreadRadius: 1,
           ),
         ],
       ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.8,
-        ),
+      child: Row(
+        children: [
+          const Icon(Icons.circle, size: 10, color: Colors.white),
+          const SizedBox(width: 6),
+          translateText(text),
+        ],
       ),
     );
   }
 
-  // ====== Scrollable Stats ======
+  // STATS CARDS
   Widget _horizontalScrollStats(Size screenSize) {
     final stats = [
       {'title': 'Impressions', 'value': '1.2k', 'icon': Icons.remove_red_eye},
       {'title': 'Clicks', 'value': '312', 'icon': Icons.touch_app},
       {'title': 'Conversions', 'value': '68', 'icon': Icons.trending_up},
-      {'title': 'Budget Spent', 'value': '48%', 'icon': Icons.account_balance},
+      {'title': 'Budget Used', 'value': '48%', 'icon': Icons.account_balance},
     ];
 
     return SingleChildScrollView(
@@ -187,28 +208,25 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // ====== Overview Card with Stylish Buttons ======
-  Widget _overviewCard(Size screenSize, BuildContext context,
-      Map<String, dynamic> campaign, DateTime start, DateTime end) {
+  // OVERVIEW CARD
+  Widget _overviewCard(Size screenSize, Map<String, dynamic> campaign,
+      DateTime start, DateTime end) {
     return _HoverCardContainer(
       child: Padding(
         padding: EdgeInsets.all(screenSize.width * 0.05),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Overview',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                    color: Color(0xFF2C1A63))),
+            translateText('📌 Overview'),
             const SizedBox(height: 10),
-            Text(campaign['offer'], style: const TextStyle(fontSize: 15)),
+            Text(campaign['offer'],
+                style: const TextStyle(fontSize: 15, color: Colors.black87)),
             const SizedBox(height: 14),
             Row(
               children: [
-                const Icon(Icons.location_on, color: Colors.purple, size: 18),
+                const Icon(Icons.location_on, color: Colors.deepPurple, size: 18),
                 const SizedBox(width: 6),
-                Text('${campaign['radius_km']} km radius'),
+                translateText('${campaign['radius_km']} km radius'),
                 const SizedBox(width: 16),
                 const Icon(Icons.schedule, color: Colors.indigo, size: 18),
                 const SizedBox(width: 6),
@@ -219,26 +237,24 @@ class DashboardScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 18),
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 10,
               children: [
                 _glossyButton(
-                  text: "Edit",
-                  icon: Icons.edit,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6A00F8), Color(0xFF7E57C2)],
-                  ),
-                  onTap: () {},
-                ),
-                const SizedBox(width: 10),
+                    text: "Edit",
+                    icon: Icons.edit,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF6A00F8), Color(0xFF9575CD)],
+                    ),
+                    onTap: () {}),
                 _glossyButton(
-                  text: "Share",
-                  icon: Icons.share_outlined,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF9C4DFF), Color(0xFFCE93D8)],
-                  ),
-                  onTap: () {},
-                ),
-                const SizedBox(width: 10),
+                    text: "Share",
+                    icon: Icons.share_outlined,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFAB47BC), Color(0xFFE1BEE7)],
+                    ),
+                    onTap: () {}),
                 _glassButton("Analytics", onTap: () {}),
               ],
             )
@@ -248,7 +264,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // ====== Analytics Card ======
+  // ANALYTICS CARD
   Widget _analyticsCard(Size screenSize) {
     return _HoverCardContainer(
       child: Padding(
@@ -256,26 +272,17 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Engagement',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 17,
-                    color: Color(0xFF2C1A63))),
+            translateText('📈 Engagement Insights'),
             const SizedBox(height: 15),
             Container(
               height: screenSize.height * 0.18,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 gradient: const LinearGradient(
                   colors: [Color(0xFFF3E5F5), Color(0xFFEDE7F6)],
                 ),
               ),
-              child: const Center(
-                child: Text(
-                  '📊 Engagement Insights Coming Soon',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ),
+              child: Center(child: translateText('Coming Soon 🚀')),
             ),
           ],
         ),
@@ -283,11 +290,12 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // ====== Community Section ======
+  // COMMUNITY CARD
   Widget _communityCard(BuildContext context, Size screenSize) {
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, '/community'),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
         width: double.infinity,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -296,8 +304,8 @@ class DashboardScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.deepPurple.withOpacity(0.25),
-              blurRadius: 16,
+              color: Colors.deepPurple.withOpacity(0.3),
+              blurRadius: 20,
               offset: const Offset(0, 6),
             )
           ],
@@ -305,22 +313,17 @@ class DashboardScreen extends StatelessWidget {
         padding: EdgeInsets.all(screenSize.width * 0.06),
         child: Row(
           children: [
-            const Icon(Icons.people_alt_rounded, color: Colors.white, size: 44),
+            const Icon(Icons.people_alt_rounded,
+                color: Colors.white, size: 44),
             SizedBox(width: screenSize.width * 0.05),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Community Connect',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold)),
-                  SizedBox(height: 6),
-                  Text(
-                    'Join local campaigns, share insights, and connect!',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
+                children: [
+                  translateText('Community Connect'),
+                  const SizedBox(height: 6),
+                  translateText(
+                      'Join local campaigns, share insights, and grow together!'),
                 ],
               ),
             ),
@@ -332,7 +335,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  // ====== Glossy Gradient Buttons ======
+  // BUTTONS
   Widget _glossyButton({
     required String text,
     required IconData icon,
@@ -348,7 +351,7 @@ class DashboardScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.deepPurple.withOpacity(0.2),
+              color: Colors.deepPurple.withOpacity(0.25),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -356,13 +359,11 @@ class DashboardScreen extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: Colors.white, size: 18),
             const SizedBox(width: 6),
-            Text(
-              text,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-            ),
+            translateText(text),
           ],
         ),
       ),
@@ -380,10 +381,7 @@ class DashboardScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(10),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        child: Text(
-          text,
-          style: const TextStyle(color: Color(0xFF6A00F8), fontSize: 14),
-        ),
+        child: translateText(text),
       ),
     );
   }
@@ -424,7 +422,7 @@ class _HoverCardState extends State<_HoverCard> {
           boxShadow: [
             BoxShadow(
               color: _hover
-                  ? Colors.deepPurple.withOpacity(0.25)
+                  ? Colors.deepPurple.withOpacity(0.2)
                   : Colors.black12.withOpacity(0.05),
               blurRadius: _hover ? 14 : 6,
               offset: const Offset(0, 5),
@@ -435,16 +433,14 @@ class _HoverCardState extends State<_HoverCard> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(widget.icon,
-                color: const Color(0xFF6A00F8),
-                size: _hover ? 30 : 26),
+                color: const Color(0xFF6A00F8), size: _hover ? 30 : 26),
             const SizedBox(height: 8),
             Text(widget.value,
                 style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                     color: Color(0xFF2C1A63))),
-            Text(widget.title,
-                style: const TextStyle(color: Colors.grey, fontSize: 13)),
+            translateText(widget.title),
           ],
         ),
       ),
@@ -473,11 +469,11 @@ class _HoverCardContainerState extends State<_HoverCardContainer> {
         curve: Curves.easeOut,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
               color: _hover
-                  ? Colors.deepPurple.withOpacity(0.2)
+                  ? Colors.deepPurple.withOpacity(0.15)
                   : Colors.black12.withOpacity(0.05),
               blurRadius: _hover ? 18 : 8,
               offset: const Offset(0, 6),
