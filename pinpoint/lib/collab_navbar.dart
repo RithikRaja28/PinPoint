@@ -9,8 +9,11 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pinpoint/screens/collab_request_list.dart';
 import 'package:pinpoint/screens/community_feed_screen.dart';
 import 'package:pinpoint/screens/customer_screen.dart';
+import 'package:pinpoint/screens/ai_concierge_screen.dart'; // ✅ Import the new screen
 import 'package:pinpoint/globals.dart';
 import 'package:pinpoint/user_model.dart';
+import 'package:pinpoint/screens/location_simulator_screen.dart';
+
 
 class CollabNavBar extends StatefulWidget {
   const CollabNavBar({super.key});
@@ -24,7 +27,7 @@ class _CollabNavBarState extends State<CollabNavBar> {
 
   GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
-  LatLng _initialPosition = const LatLng(28.6139, 77.2090); // default Delhi
+  LatLng _initialPosition = const LatLng(28.6139, 77.2090);
   bool _loadingMap = true;
   List<Map<String, dynamic>> _shops = [];
   bool _shopsLoaded = false;
@@ -60,11 +63,6 @@ class _CollabNavBarState extends State<CollabNavBar> {
       if (permission == LocationPermission.deniedForever) {
         setState(() => _loadingMap = false);
         return;
-      }
-
-      Position? lastPos = await Geolocator.getLastKnownPosition();
-      if (lastPos != null) {
-        _initialPosition = LatLng(lastPos.latitude, lastPos.longitude);
       }
 
       Position pos = await Geolocator.getCurrentPosition(
@@ -154,7 +152,6 @@ class _CollabNavBarState extends State<CollabNavBar> {
     }
   }
 
-  // 🔹 Improved Shop Description Bottom Sheet
   void _showShopDialog(String shopName, Map<String, dynamic> data) {
     showModalBottomSheet(
       context: context,
@@ -277,70 +274,6 @@ class _CollabNavBarState extends State<CollabNavBar> {
             setState(() {});
           },
         ),
-        DraggableScrollableSheet(
-          initialChildSize: 0.12,
-          minChildSize: 0.12,
-          maxChildSize: 0.4,
-          builder: (context, scrollController) {
-            return Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(25)),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 6,
-                      spreadRadius: 3),
-                ],
-              ),
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: _shops.length,
-                itemBuilder: (context, index) {
-                  final shop = _shops[index];
-                  return GestureDetector(
-                    onTap: () {
-                      LatLng shopPos = LatLng(shop['lat'], shop['lng']);
-                      _mapController?.animateCamera(
-                        CameraUpdate.newCameraPosition(
-                            CameraPosition(target: shopPos, zoom: 16)),
-                      );
-                      _showShopDialog(shop['name'], shop);
-                    },
-                    child: Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      elevation: 3,
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(shop['name'],
-                                  style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.deepPurple)),
-                              const SizedBox(height: 4),
-                              Text(shop['description'] ?? "",
-                                  style: const TextStyle(color: Colors.grey)),
-                              const SizedBox(height: 4),
-                              Text(
-                                  "City: ${shop['city']}, Phone: ${shop['phone']}",
-                                  style:
-                                      const TextStyle(color: Colors.grey)),
-                            ]),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
       ],
     );
   }
@@ -354,8 +287,7 @@ class _CollabNavBarState extends State<CollabNavBar> {
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color:
-                isSelected ? const Color(0xFF4B00C8) : Colors.transparent),
+            color: isSelected ? const Color(0xFF4B00C8) : Colors.transparent),
         child: Icon(isSelected ? selectedIcon : icon,
             color: Colors.white, size: isSelected ? 28 : 24),
       ),
@@ -371,6 +303,8 @@ class _CollabNavBarState extends State<CollabNavBar> {
       ColobRequestList(),
       const CommunityFeedScreen(),
       const CustomerPage(),
+      _mapSection(),
+      const AIConciergeScreen(), // ✅ NEW PAGE
     ];
 
     return Scaffold(
@@ -400,42 +334,66 @@ class _CollabNavBarState extends State<CollabNavBar> {
                           fontWeight: FontWeight.bold,
                           fontSize: 20)),
                 ]),
-                Row(children: [
-                  if (user != null)
-                    GestureDetector(
-                      onTap: () => setState(() => _selectedIndex = 2),
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Colors.white.withOpacity(0.25),
-                        child: Text(
-                            user.name.isNotEmpty
-                                ? user.name[0].toUpperCase()
-                                : "?",
-                            style: const TextStyle(
+                Row(
+                    children: [
+                      if (user != null) ...[
+                        GestureDetector(
+                          onTap: () => setState(() => _selectedIndex = 2),
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.white.withOpacity(0.25),
+                            child: Text(
+                              user.name.isNotEmpty
+                                  ? user.name[0].toUpperCase()
+                                  : "?",
+                              style: const TextStyle(
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold)),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          tooltip: "Simulate Location",
+                          icon: const Icon(
+                            Icons.my_location,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            // Navigate to Location Simulator Screen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const LocationSimulatorScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                      const SizedBox(width: 10),
+                      IconButton(
+                        tooltip: "Logout",
+                        icon: const Icon(Icons.logout, color: Colors.white),
+                        onPressed: () async {
+                          await FirebaseAuth.instance.signOut();
+                          currentUser = null;
+                          if (context.mounted) {
+                            Navigator.of(
+                              context,
+                            ).pushNamedAndRemoveUntil('/', (r) => false);
+                          }
+                        },
                       ),
-                    ),
-                  const SizedBox(width: 10),
-                  IconButton(
-                    tooltip: "Logout",
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    onPressed: () async {
-                      await FirebaseAuth.instance.signOut();
-                      currentUser = null;
-                      if (context.mounted) {
-                        Navigator.of(context)
-                            .pushNamedAndRemoveUntil('/', (r) => false);
-                      }
-                    },
+                    ],
                   ),
-                ]),
               ]),
             ),
           ),
         ),
       ),
-      body: _selectedIndex == 3 ? _mapSection() : pages[_selectedIndex],
+      body: pages[_selectedIndex],
       bottomNavigationBar: Container(
         margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
@@ -488,8 +446,11 @@ class _CollabNavBarState extends State<CollabNavBar> {
                 _buildNavItem(Icons.store_mall_directory_outlined, Icons.store,
                     "Stores", 0),
                 _buildNavItem(Icons.people_outline, Icons.people, "Community", 1),
-                _buildNavItem(Icons.person_outline, Icons.person, "Customer", 2),
+                _buildNavItem(
+                    Icons.person_outline, Icons.person, "Customer", 2),
                 _buildNavItem(Icons.map_outlined, Icons.map, "Show Map", 3),
+                _buildNavItem(Icons.psychology_outlined, Icons.psychology,
+                    "AI Assistant", 4), // ✅ NEW NAV ITEM
               ],
             ),
           ),
