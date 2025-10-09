@@ -146,6 +146,8 @@ PinPoint inverts this model to use **user-based geofencing**:
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/1b2f637d-fb88-4ded-98ba-f511e2168ff8" width="45%" />
+  <img src="https://github.com/user-attachments/assets/3587d42c-65f7-44c0-8ba9-46ea936cfc4f" width="45%" />
+  <img src="https://github.com/user-attachments/assets/8fd22a09-3ba7-4c1a-aed0-8be0170f1974" width="45%" />  
 </p>
 
 ---
