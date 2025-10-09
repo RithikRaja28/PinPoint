@@ -463,7 +463,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           .collection(collectionName)
           .doc(uid)
           .set(userModel.toMap());
-      await updateFcmToken(FCM_TOKEN, userModel.phone);
+      updateFcmToken(FCM_TOKEN, userModel.phone);
 
       // 2) Create/merge extended shop fields into Firestore (so Firestore contains complete shop info)
       final chosenCategory = _selectedSubcategory ?? _selectedCategoryGroup;
