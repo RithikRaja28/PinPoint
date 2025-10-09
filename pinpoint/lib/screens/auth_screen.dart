@@ -391,6 +391,24 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
 
   Future<void> _submitSignup() async {
     if (!_formKey.currentState!.validate()) return;
+    final phone = _phoneController.text.trim();
+    final redirectUrl = "";
+    final Uri url = Uri.parse(
+      "$endpoint1/api/geofence/verifynumber?phone_number=$phone&redirect_url=$redirectUrl",
+    );
+
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+      } else {
+        print("❌ Server error: ${response.statusCode}");
+        return;
+      }
+    } catch (e) {
+      print("⚠️ Exception: $e");
+    }
 
     if (_selectedUserType == UserType.business && _shopLocation == null) {
       _showSnack("Select shop location");
@@ -1154,6 +1172,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _signInWithEmailPassword() async {
+    findLocation();
     if (!loginFormKey.currentState!.validate()) return;
 
     setState(() => _loading = true);
@@ -1232,7 +1251,6 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     } finally {
       setState(() => _loading = false);
     }
-    // findLocation();
   }
 
   Widget _signupCard() {
