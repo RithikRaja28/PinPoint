@@ -5,6 +5,7 @@ recommend_bp = Blueprint("recommend", __name__)
 
 @recommend_bp.route("/recommend", methods=["POST"])
 def get_recommendations():
+    print("🔍 Recommendation route registered at /api/recommend");
     """
     Expects JSON: { "prompt": "I have 250 rs for coffee" }
     Returns: list of matching shop suggestions.
