@@ -180,16 +180,7 @@ cd <your-repo>
 
 Create a file named .env in the backend/ folder and add the following values:
 
-# Flask Environment
-FLASK_ENV=development
-SECRET_KEY=your_secret_key
-JWT_SECRET_KEY=your_jwt_secret_key
 
-# Database
-DATABASE_URL=postgresql://username:password@localhost:5432/your_database
-
-# APIs
-GEMINI_API_KEY=your_gemini_api_key
 
 # Nokia (Network-as-Code) API
 NOKIA_BASE_URL=https://network-as-code.p-eu.rapidapi.com
@@ -197,31 +188,17 @@ NOKIA_RAPIDAPI_KEY=your_rapidapi_key
 NOKIA_RAPIDAPI_HOST=network-as-code.nokia.rapidapi.com
 
 # Endpoint (Backend URL)
-ENDPOINT=http://127.0.0.1:5000
+ENDPOINT=http://127.0.0.1:5000 (Ex)
 
 
 Replace each your_... value with your actual API keys, database credentials, and base URLs.
 
 3. Backend Setup (Flask)
-Step 1 — Create a Virtual Environment
-cd backend
-python -m venv venv
 
-Step 2 — Activate the Environment
-
-Windows
-
-venv\Scripts\activate
-
-
-macOS/Linux
-
-source venv/bin/activate
-
-Step 3 — Install Dependencies
+Step 1 — Install Dependencies
 pip install -r requirements.txt
 
-Step 4 — Run the Backend
+Step 2 — Run the Backend
 python app.py
 
 
@@ -230,33 +207,21 @@ The Flask server should start running at:
 http://127.0.0.1:5000
 
 4. Flutter App Setup
+5. 
 Step 1 — Navigate to the Flutter Project
+
 cd pinpoint
 
 Step 2 — Clean and Fetch Dependencies
+
 flutter clean
+
 flutter pub get
 
 Step 3 — Run the App
+
 flutter run
 
-
-If you have multiple devices connected, use:
-
-flutter devices
-flutter run -d <device_id>
-
-5. Common Environment Variables Reference
-Variable	Description
-FLASK_ENV	Flask environment (development/production)
-SECRET_KEY	Used for Flask session encryption
-JWT_SECRET_KEY	Secret key for JWT authentication
-DATABASE_URL	Your PostgreSQL / SQLite connection URL
-GEMINI_API_KEY	API key for Gemini integration
-NOKIA_BASE_URL	Base URL for Nokia Network-as-Code API
-NOKIA_RAPIDAPI_KEY	Your RapidAPI key
-NOKIA_RAPIDAPI_HOST	Nokia RapidAPI host
-ENDPOINT	Your backend API base URL
 ---
 
 
