@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pinpoint/root_screen.dart';
+import 'package:pinpoint/screens/ai_concierge_screen.dart';
 import 'package:pinpoint/screens/collab_request_list.dart';
 import 'package:pinpoint/screens/create_campaign_screen.dart';
 import 'package:pinpoint/screens/customer_screen.dart';
@@ -112,8 +113,10 @@ class CampaignApp extends StatelessWidget {
         '/customer': (ctx) => CustomerPage(),
         '/colab_request': (ctx) => ColobRequestList(),
         '/shops': (ctx) => const ShopsListScreen(),
+        '/ai_concierge': (ctx) => const AIConciergeScreen(),
       },
-      initialRoute: '/',
+      initialRoute: '/ai_concierge',
+
     );
   }
 }
