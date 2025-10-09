@@ -149,12 +149,12 @@ PinPoint inverts this model to use **user-based geofencing**:
 </p>
 
 ---
-🚀 Project Setup Guide — PinPoint App + Backend
-🧩 Prerequisites
+Project Setup Guide — PinPoint App + Backend
+Prerequisites
 
 Before running the project, make sure you have the following installed:
 
-🐍 Python Requirements
+Python Requirements
 
 Python 3.9+
 
@@ -162,7 +162,7 @@ pip
 
 virtualenv
 
-🐦 Flutter Requirements
+Flutter Requirements
 
 Flutter SDK (3.0+)
 
@@ -172,11 +172,11 @@ Dart plugin
 
 A connected Android/iOS device or emulator
 
-⚙️ 1. Clone the Repository
+1. Clone the Repository
 git clone https://github.com/<your-username>/<your-repo>.git
 cd <your-repo>
 
-🔑 2. Setup Environment Variables
+2. Setup Environment Variables
 
 Create a file named .env in the backend/ folder and add the following values:
 
@@ -200,9 +200,9 @@ NOKIA_RAPIDAPI_HOST=network-as-code.nokia.rapidapi.com
 ENDPOINT=http://127.0.0.1:5000
 
 
-⚠️ Replace each your_... value with your actual API keys, database credentials, and base URLs.
+Replace each your_... value with your actual API keys, database credentials, and base URLs.
 
-🖥️ 3. Backend Setup (Flask)
+3. Backend Setup (Flask)
 Step 1 — Create a Virtual Environment
 cd backend
 python -m venv venv
@@ -229,7 +229,7 @@ The Flask server should start running at:
 
 http://127.0.0.1:5000
 
-📱 4. Flutter App Setup
+4. Flutter App Setup
 Step 1 — Navigate to the Flutter Project
 cd pinpoint
 
@@ -241,12 +241,12 @@ Step 3 — Run the App
 flutter run
 
 
-💡 If you have multiple devices connected, use:
+If you have multiple devices connected, use:
 
 flutter devices
 flutter run -d <device_id>
 
-🔔 5. Common Environment Variables Reference
+5. Common Environment Variables Reference
 Variable	Description
 FLASK_ENV	Flask environment (development/production)
 SECRET_KEY	Used for Flask session encryption
