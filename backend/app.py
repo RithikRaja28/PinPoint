@@ -7,7 +7,10 @@ from database import db
 from routes.campaign import campaign_bp
 from routes.poster import poster_bp
 from routes.shop import shop_bp
+from routes.fencinglogic import fence_logic
+from app.routes.geofence import geofence_bp, get_device_connectivity_status, get_device_location, create_geofence_subscription
 from routes.devices import device_bp
+from routes.product import product_bp
 # from routes.fencinglogic import fence_logic
 from app.routes.geofence import geofence_bp, get_device_location, create_geofence_subscription
 
@@ -52,6 +55,7 @@ app.register_blueprint(poster_bp, url_prefix="/api")
 app.register_blueprint(shop_bp, url_prefix="/shops")
 app.register_blueprint(geofence_bp, url_prefix="/api/geofence")
 app.register_blueprint(device_bp, url_prefix="/device")
+app.register_blueprint(product_bp, url_prefix="/products")
 # app.register_blueprint(fence_logic, url_prefix="/api/geofence/callback")
 
 
@@ -64,7 +68,6 @@ def implement_geofence():
     try:
         conn = psycopg2.connect(os.getenv("DATABASE_URL"))
         cursor = conn.cursor()
-
         # 1️⃣ Fetch all devices
         cursor.execute("SELECT uid, phone_number FROM devices;")
         devices = cursor.fetchall()
@@ -80,7 +83,7 @@ def implement_geofence():
             try:
                 # 3️⃣ Retrieve location from API
                 print(f"📍 Retrieving location for {phone_number} ...")
-                location = get_device_location(phone_number)
+                location = get_device_location({ "device": {"phoneNumber": phone_number}, "maxAge": 60, })
 
                 if not location or "error" in location:
                     print(f"❌ Failed to get location for {phone_number}: {location}")
@@ -89,17 +92,33 @@ def implement_geofence():
                 # 4️⃣ Parse location fields safely
                 current_lat = float(location.get("latitude", 0))
                 current_lon = float(location.get("longitude", 0))
-                radius = int(location.get("radius", 2000))
+                radius = int(location.get("radius", 1000))
                 last_time = location.get("lastLocationTime", "N/A")
 
+                status_success, status_result=get_device_connectivity_status(phone_number)
+                
                 print(f"📍 Device {phone_number} -> lat: {current_lat}, lon: {current_lon}, radius: {radius}, time: {last_time}")
+                update_query = """
+                    UPDATE devices
+                    SET latitude = %s,
+                        longitude = %s,
+                        c_status=%s
+                    WHERE phone_number = %s;
+                """
+                cursor.execute(update_query, (current_lat, current_lon,status_result["connectivityStatus"], phone_number))
+                conn.commit()
+                print(f"✅ Updated device {phone_number} in DB with latest location.")
 
                 # 5️⃣ Create geofence subscription
                 create_res = create_geofence_subscription(phone_number, current_lat, current_lon, radius)
-                print(f"🛰 Geofence created for {phone_number}: {create_res}")
+                print(f"🛰️ Geofence created for {phone_number}: {create_res}")
+
+                #shops descovery logic create functions discover nearby shops so we can use for update geofence also
+
+                #once shops discovered, iterate shops, find campains for that shop, invoke pushnotification to that user device using the FCM code
 
             except Exception as inner_e:
-                print(f"⚠ Error processing {phone_number}: {inner_e}")
+                print(f"⚠️ Error processing {phone_number}: {inner_e}")
 
         cursor.close()
         conn.close()
@@ -117,7 +136,7 @@ if __name__ == "__main__":
     host = os.getenv("FLASK_HOST", "0.0.0.0")
     port = int(os.getenv("FLASK_PORT", "5000"))
 
-    # ⚙ Run geofence setup before app starts
+    # ⚙️ Run geofence setup before app starts
     # with app.app_context():
     #     implement_geofence()
 

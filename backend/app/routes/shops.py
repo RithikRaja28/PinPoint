@@ -29,6 +29,11 @@ def create_shop():
 
     return jsonify({'shop_id': shop.id, 'name': shop.name})
 
+
+@shops_bp.route('/', methods=['GET'])
+def helperrr():
+    return "working"
+
 @shops_bp.route('/nearby', methods=['GET'])
 def nearby_shops():
     lat = request.args.get('lat', type=float)

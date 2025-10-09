@@ -11,6 +11,7 @@ poster_bp = Blueprint("poster_bp", __name__)
 
 @poster_bp.route("/poster", methods=["POST"])
 def poster_create():
+    print("🚀 Generating poster...")
     """
     Generate a poster PNG from HTML (Playwright), save to uploads folder,
     and return the poster_url to the frontend. Do NOT save campaign to DB.

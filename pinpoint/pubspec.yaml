@@ -61,6 +61,10 @@ dependencies:
   fluttertoast: ^9.0.0
   line_icons: ^2.0.3
   url_launcher: ^6.3.2
+  firebase_messaging: ^16.0.2
+
+
+
 
 dev_dependencies:
   flutter_test:

@@ -155,7 +155,194 @@ def get_device_connectivity_status():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-# Retrieve Device Location
+# # Retrieve Device Location
+# @geofence_bp.route("/location/retrieve", methods=["POST"])
+# def retrieve_location_and_status():
+#     if not request.is_json:
+#         return jsonify({
+#             "success": False,
+#             "error": "Request content type must be application/json",
+#             "hint": "Add 'Content-Type: application/json' in your request headers."
+#         }), 415
+
+#     data = request.get_json()
+#     print("📍 Received request data:", json.dumps(data, indent=2))
+
+#     if "device" not in data or "phoneNumber" not in data["device"]:
+#         return jsonify({
+#             "success": False,
+#             "error": "Invalid payload. Must include device.phoneNumber."
+#         }), 400
+
+#     phone_number = data["device"]["phoneNumber"]
+
+#     # 1️⃣ Get device location
+#     location_result = get_device_location(data)
+#     if "error" in location_result:
+#         print("❌ Location retrieval failed:", location_result["error"])
+#         return jsonify({
+#             "success": False,
+#             "error": location_result["error"]
+#         }), 500
+
+#     # 2️⃣ Subscribe device status
+#     subscription_payload = {
+#         "subscriptionDetail": {
+#             "device": {"phoneNumber": phone_number},
+#             "type": "org.camaraproject.device-status.v0.roaming-status"
+#         },
+#         "subscriptionExpireTime": "2026-01-17T13:18:23.682Z",
+#         "webhook": {
+#             "notificationUrl": "https://application-server.com",
+#             "notificationAuthToken": "c8974e592c2fa383d4a3960714"
+#         }
+#     }
+
+#     print("📤 Subscription API Payload:", json.dumps(subscription_payload, indent=2))
+
+#     subscription_url = f"{NOKIA_BASE_URL}/device-status/v0/subscriptions"
+#     try:
+#         sub_res = requests.post(subscription_url, data=json.dumps(subscription_payload), headers=HEADERS, timeout=15)
+#         print("📡 Device Status Subscription Response Code:", sub_res.status_code)
+#         print("📡 Device Status Subscription Response Body:", sub_res.text)
+#         subscription_success = sub_res.status_code in [200, 201]
+#         subscription_result = sub_res.json() if subscription_success else {"error": f"Unexpected response: {sub_res.status_code} - {sub_res.text}"}
+#     except Exception as e:
+#         subscription_result = {"error": str(e)}
+#         subscription_success = False
+#         print("❌ Subscription API Exception:", e)
+
+#     # 3️⃣ Get device connectivity status
+#     status_payload = {
+#         "device": {"phoneNumber": phone_number}
+#     }
+#     status_url = f"{NOKIA_BASE_URL}/device-status/v0/connectivity"
+
+#     print("📤 Connectivity Status API Payload:", json.dumps(status_payload, indent=2))
+
+#     try:
+#         status_res = requests.post(status_url, data=json.dumps(status_payload), headers=HEADERS, timeout=15)
+#         print("📡 Device Status Response Code:", status_res.status_code)
+#         print("📡 Device Status Response Body:", status_res.text)
+#         status_success = status_res.status_code in [200, 201]
+#         status_result = status_res.json() if status_success else {"error": f"Unexpected response: {status_res.status_code} - {status_res.text}"}
+#     except Exception as e:
+#         status_result = {"error": str(e)}
+#         status_success = False
+#         print("❌ Device Status API Exception:", e)
+
+#     # ✅ Return combined response
+#     return jsonify({
+#         "success": True,
+#         "location": location_result,
+#         "subscription": {
+#             "success": subscription_success,
+#             "data": subscription_result
+#         },
+#         "device_status": {
+#             "success": status_success,
+#             "data": status_result
+#         },
+#         "message": "✅ Device location retrieved, subscription processed, and device status fetched."
+#     }), 200
+
+
+# ---------------------------------------------------------------------
+# 🔹 Function: Subscribe Device to Status Updates
+# ---------------------------------------------------------------------
+def subscribe_device_status(phone_number):
+    subscription_payload = {
+        "subscriptionDetail": {
+            "device": {"phoneNumber": phone_number},
+            "type": "org.camaraproject.device-status.v0.roaming-status"
+        },
+        "subscriptionExpireTime": "2026-01-17T13:18:23.682Z",
+        "webhook": {
+            "notificationUrl": "https://application-server.com",
+            "notificationAuthToken": "c8974e592c2fa383d4a3960714"
+        }
+    }
+
+    print("📤 Subscription API Payload:", json.dumps(subscription_payload, indent=2))
+    subscription_url = f"{NOKIA_BASE_URL}/device-status/v0/subscriptions"
+
+    try:
+        response = requests.post(
+            subscription_url,
+            data=json.dumps(subscription_payload),
+            headers=HEADERS,
+            timeout=15
+        )
+        print("📡 Device Status Subscription Response Code:", response.status_code)
+        print("📡 Device Status Subscription Response Body:", response.text)
+
+        success = response.status_code in [200, 201]
+        result = response.json() if success else {
+            "error": f"Unexpected response: {response.status_code} - {response.text}"
+        }
+        return success, result
+
+    except Exception as e:
+        print("❌ Subscription API Exception:", e)
+        return False, {"error": str(e)}
+
+
+# ---------------------------------------------------------------------
+# 🔹 Function: Get Device Connectivity Status
+# ---------------------------------------------------------------------
+def get_device_connectivity_status(phone_number):
+    status_payload = {
+        "device": {"phoneNumber": phone_number}
+    }
+
+    print("📤 Connectivity Status API Payload:", json.dumps(status_payload, indent=2))
+    status_url = f"{NOKIA_BASE_URL}/device-status/v0/connectivity"
+
+    try:
+        response = requests.post(
+            status_url,
+            data=json.dumps(status_payload),
+            headers=HEADERS,
+            timeout=15
+        )
+        print("📡 Device Status Response Code:", response.status_code)
+        print("📡 Device Status Response Body:", response.text)
+
+        success = response.status_code in [200, 201]
+        result = response.json() if success else {
+            "error": f"Unexpected response: {response.status_code} - {response.text}"
+        }
+        return success, result
+
+    except Exception as e:
+        print("❌ Device Status API Exception:", e)
+        return False, {"error": str(e)}
+
+
+
+
+@geofence_bp.route("/location/cstatus",method=["POST"])
+def get_connectivity_status():
+    data = request.get_json()
+    phone_number=data["phoneNumber"]
+    subscription_success, subscription_result = subscribe_device_status(phone_number)
+    # 3️⃣ Get device connectivity status
+    status_success, status_result = get_device_connectivity_status(phone_number)
+
+    return jsonify({
+        "data": status_result,
+        "message": "✅ Device location retrieved, subscription processed, and device status fetched."
+    }), 200
+
+
+
+
+
+
+
+# ---------------------------------------------------------------------
+# 🔹 Main API: Retrieve Device Location + Subscription + Status
+# ---------------------------------------------------------------------
 @geofence_bp.route("/location/retrieve", methods=["POST"])
 def retrieve_location_and_status():
     if not request.is_json:
@@ -185,51 +372,11 @@ def retrieve_location_and_status():
             "error": location_result["error"]
         }), 500
 
-    # 2️⃣ Subscribe device status
-    subscription_payload = {
-        "subscriptionDetail": {
-            "device": {"phoneNumber": phone_number},
-            "type": "org.camaraproject.device-status.v0.roaming-status"
-        },
-        "subscriptionExpireTime": "2026-01-17T13:18:23.682Z",
-        "webhook": {
-            "notificationUrl": "https://application-server.com",
-            "notificationAuthToken": "c8974e592c2fa383d4a3960714"
-        }
-    }
-
-    print("📤 Subscription API Payload:", json.dumps(subscription_payload, indent=2))
-
-    subscription_url = f"{NOKIA_BASE_URL}/device-status/v0/subscriptions"
-    try:
-        sub_res = requests.post(subscription_url, data=json.dumps(subscription_payload), headers=HEADERS, timeout=15)
-        print("📡 Device Status Subscription Response Code:", sub_res.status_code)
-        print("📡 Device Status Subscription Response Body:", sub_res.text)
-        subscription_success = sub_res.status_code in [200, 201]
-        subscription_result = sub_res.json() if subscription_success else {"error": f"Unexpected response: {sub_res.status_code} - {sub_res.text}"}
-    except Exception as e:
-        subscription_result = {"error": str(e)}
-        subscription_success = False
-        print("❌ Subscription API Exception:", e)
+    # 2️⃣ Subscribe to device status
+    subscription_success, subscription_result = subscribe_device_status(phone_number)
 
     # 3️⃣ Get device connectivity status
-    status_payload = {
-        "device": {"phoneNumber": phone_number}
-    }
-    status_url = f"{NOKIA_BASE_URL}/device-status/v0/connectivity"
-
-    print("📤 Connectivity Status API Payload:", json.dumps(status_payload, indent=2))
-
-    try:
-        status_res = requests.post(status_url, data=json.dumps(status_payload), headers=HEADERS, timeout=15)
-        print("📡 Device Status Response Code:", status_res.status_code)
-        print("📡 Device Status Response Body:", status_res.text)
-        status_success = status_res.status_code in [200, 201]
-        status_result = status_res.json() if status_success else {"error": f"Unexpected response: {status_res.status_code} - {status_res.text}"}
-    except Exception as e:
-        status_result = {"error": str(e)}
-        status_success = False
-        print("❌ Device Status API Exception:", e)
+    status_success, status_result = get_device_connectivity_status(phone_number)
 
     # ✅ Return combined response
     return jsonify({
@@ -241,11 +388,10 @@ def retrieve_location_and_status():
         },
         "device_status": {
             "success": status_success,
-            "data": status_result
+            "status": status_result["connectivityStatus"]
         },
         "message": "✅ Device location retrieved, subscription processed, and device status fetched."
     }), 200
-
 
 @geofence_bp.route("/trigger", methods=["POST"])
 def trigger_geofence():

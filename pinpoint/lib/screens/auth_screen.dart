@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:pinpoint/config.dart';
 
 enum AuthMode { login, signup }
 
@@ -444,6 +445,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
           .collection(collectionName)
           .doc(uid)
           .set(userModel.toMap());
+      await updateFcmToken(FCM_TOKEN, userModel.phone);
 
       // 2) Create/merge extended shop fields into Firestore (so Firestore contains complete shop info)
       final chosenCategory = _selectedSubcategory ?? _selectedCategoryGroup;
@@ -503,7 +505,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
       // --- create shop record in your Postgres backend ---
       try {
         // Build multipart request
-        final uri = Uri.parse('http://192.168.1.9:5000/shops/');
+        final uri = Uri.parse('$apiUrl/shops/');
         final req = http.MultipartRequest('POST', uri);
 
         // required/primary fields
@@ -1230,7 +1232,7 @@ class _AuthScreenState extends State<AuthScreen> with TickerProviderStateMixin {
     } finally {
       setState(() => _loading = false);
     }
-    findLocation();
+    // findLocation();
   }
 
   Widget _signupCard() {
