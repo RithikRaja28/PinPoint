@@ -13,7 +13,8 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
     {
       "username": "Aditi Sharma",
       "profilePic": "https://randomuser.me/api/portraits/women/79.jpg",
-      "image": "https://images.unsplash.com/photo-1509042239860-f550ce710b93",
+      "image":
+          "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=900&q=80",
       "caption": "☕ Loved the new latte flavor at Bean & Brew! #coffeelover",
       "likes": 128,
       "comments": 12,
@@ -21,13 +22,14 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
       "isLiked": false
     },
     {
-      "username": "Ravi Kumar",
-      "profilePic": "https://randomuser.me/api/portraits/men/32.jpg",
-      "image": "https://images.unsplash.com/photo-1594007654729-407eedc4be3d",
-      "caption": "🍕 Best pizza in town! Used PinPoint offers 🔥",
-      "likes": 98,
-      "comments": 7,
-      "time": "5 hrs ago",
+      "username": "Neha Verma",
+      "profilePic": "https://randomuser.me/api/portraits/women/45.jpg",
+      "image":
+          "https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=900&q=80",
+      "caption": "Shopping spree done right 🛍️ #deals #PinPoint",
+      "likes": 210,
+      "comments": 18,
+      "time": "1 day ago",
       "isLiked": false
     },
   ];
@@ -48,16 +50,17 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F5FB),
+      backgroundColor: const Color(0xFFF4F2FA),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        backgroundColor: Colors.transparent,
         title: const Text(
           "Community Feed 💬",
           style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: Color(0xFF2C1A63),
+            color: Color(0xFF3E1D70),
+            fontSize: 22,
           ),
         ),
       ),
@@ -69,14 +72,14 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
           boxShadow: [
             BoxShadow(
               color: Colors.deepPurpleAccent.withOpacity(0.4),
-              blurRadius: 15,
-              spreadRadius: 2,
+              blurRadius: 12,
+              spreadRadius: 3,
             ),
           ],
         ),
         child: FloatingActionButton(
           backgroundColor: const Color(0xFF6A00F8),
-          child: const Icon(Icons.add, size: 28),
+          child: const Icon(Icons.add, size: 28, color: Colors.white),
           onPressed: () async {
             final newPost = await Navigator.push<Map<String, dynamic>>(
               context,
@@ -91,6 +94,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
         ),
       ),
 
+      // 🌈 Post Feed
       body: ListView.builder(
         physics: const BouncingScrollPhysics(),
         itemCount: posts.length,
@@ -102,23 +106,24 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: Colors.deepPurple.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 👤 User Info
                 ListTile(
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   leading: CircleAvatar(
-                    radius: 25,
+                    radius: 26,
                     backgroundImage: NetworkImage(post["profilePic"]),
                   ),
                   title: Text(
@@ -126,25 +131,64 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.black87,
+                      fontSize: 16,
                     ),
                   ),
                   subtitle: Text(
                     post["time"],
                     style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                   ),
-                  trailing: const Icon(Icons.more_vert, color: Colors.grey),
+                  trailing:
+                      const Icon(Icons.more_vert_rounded, color: Colors.grey),
                 ),
 
+                // 🖼️ Post Image
                 ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    post["image"],
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: 250,
+                  child: Stack(
+                    children: [
+                      Image.network(
+                        post["image"],
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        height: 280,
+                        loadingBuilder: (context, child, progress) {
+                          if (progress == null) return child;
+                          return Container(
+                            height: 280,
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF7C4DFF),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      Positioned(
+                        right: 12,
+                        top: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.45),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            "PinPoint Deal",
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
+                // ❤️ Action Buttons
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -152,17 +196,17 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                     children: [
                       GestureDetector(
                         onTap: () => toggleLike(index),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeInOut,
+                        child: AnimatedScale(
+                          duration: const Duration(milliseconds: 200),
+                          scale: posts[index]["isLiked"] ? 1.2 : 1.0,
                           child: Icon(
-                            post["isLiked"]
+                            posts[index]["isLiked"]
                                 ? Icons.favorite_rounded
                                 : Icons.favorite_border_rounded,
-                            color: post["isLiked"]
+                            color: posts[index]["isLiked"]
                                 ? Colors.pinkAccent
                                 : Colors.grey[700],
-                            size: post["isLiked"] ? 30 : 27,
+                            size: 28,
                           ),
                         ),
                       ),
@@ -176,6 +220,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                   ),
                 ),
 
+                // ❤️ Likes Count
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
@@ -187,6 +232,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                   ),
                 ),
 
+                // ✍️ Caption
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -212,6 +258,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                   ),
                 ),
 
+                // 💬 Comments info
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -223,7 +270,7 @@ class _CommunityFeedScreenState extends State<CommunityFeedScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
               ],
             ),
           );

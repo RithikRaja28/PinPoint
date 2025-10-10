@@ -82,7 +82,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Gets current file’s directory
-SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, "serviceAccountKey.json") # Path to Firebase service account key
+SERVICE_ACCOUNT_FILE = "pinpoint-e02f5-firebase-adminsdk-fbsvc-76372b9547.json" # Path to Firebase service account key
 PROJECT_ID = "pinpoint-e02f5"                   # Your Firebase project ID
 FCM_ENDPOINT = f"https://fcm.googleapis.com/v1/projects/{PROJECT_ID}/messages:send"
 
@@ -95,6 +95,7 @@ db = firestore.client()
 
 
 def get_access_token():
+    print("access got")
     """Generate OAuth2 access token from Firebase service account credentials."""
     credentials = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE,
@@ -106,6 +107,7 @@ def get_access_token():
 
 
 def send_fcm_message(token, title, body, data=None, image_url=None):
+    print("gggggg")
     """Send push notification using FCM HTTP v1 API (with optional image)."""
     access_token = get_access_token()
 
@@ -136,17 +138,19 @@ def send_fcm_message(token, title, body, data=None, image_url=None):
 
 
 def send_notify(phone_no, title, imageurl):
+    print("gggggkkk")
     """Fetch FCM token for the phone number and send notification."""
     try:
         # 🔹 Retrieve the token from Firestore
-        doc_ref = db.collection("fcm_map").document(phone_no)
-        doc = doc_ref.get()
+        # doc_ref = db.collection("fcm_map").document(phone_no)
+        # doc = doc_ref.get()
 
-        if not doc.exists:
-            print(f"❌ No FCM token found for {phone_no}")
-            return {"success": False, "error": "Token not found"}
+        # if not doc.exists:
+        #     print(f"❌ No FCM token found for {phone_no}")
+        #     return {"success": False, "error": "Token not found"}
 
-        fcm_token = doc.to_dict().get("token")
+        # fcm_token = doc.to_dict().get("token")
+        fcm_token="e9rsqNEqRn-LfZuiQfL-uN:APA91bFJwL-B15Na1rlp05of14dmfQdrialW2NDecoXB-UXB342bPI-GgyGTrdZGR5fyD92A1pcL614_MC8PWhfq99lp7kF_-T2qJe9PYuUPagCM0hPrldk"
 
         if not fcm_token:
             print(f"⚠️ Document found but token field is missing for {phone_no}")
@@ -168,4 +172,6 @@ def send_notify(phone_no, title, imageurl):
     except Exception as e:
         print(f"❌ Error sending notification: {e}")
         return {"success": False, "error": str(e)}
+    
+print(send_notify("9952276785","summa testing","https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3QoyVTa--eV6H-M4LSRKB0GtjHLtjcq2e549K0tKh4OT3POyiMySQ-BQ&s"))
 

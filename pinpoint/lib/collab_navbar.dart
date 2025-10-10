@@ -416,7 +416,7 @@ class _CollabNavBarState extends State<CollabNavBar> {
                       Icon(Icons.group, color: Colors.white, size: 28),
                       SizedBox(width: 6),
                       Text(
-                        "Collaboration",
+                        "PinPoint",
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
