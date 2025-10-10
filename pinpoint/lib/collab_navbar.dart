@@ -10,6 +10,7 @@ import 'package:pinpoint/screens/collab_request_list.dart';
 import 'package:pinpoint/screens/community_feed_screen.dart';
 import 'package:pinpoint/screens/customer_screen.dart';
 import 'package:pinpoint/globals.dart';
+import 'package:pinpoint/screens/shops_list_screen.dart';
 import 'package:pinpoint/user_model.dart';
 
 class CollabNavBar extends StatefulWidget {
@@ -103,8 +104,9 @@ class _CollabNavBarState extends State<CollabNavBar> {
 
   Future<void> _loadShops() async {
     try {
-      final snapshot =
-          await FirebaseFirestore.instance.collection('stores').get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('stores')
+          .get();
 
       final newMarkers = <Marker>{};
       final shopsData = <Map<String, dynamic>>[];
@@ -239,10 +241,7 @@ class _CollabNavBarState extends State<CollabNavBar> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 15,
-              ),
+              style: const TextStyle(color: Colors.black87, fontSize: 15),
             ),
           ),
         ],
@@ -256,14 +255,17 @@ class _CollabNavBarState extends State<CollabNavBar> {
     }
 
     final mapKey = ValueKey(
-        'shop_map_${_initialPosition.latitude}_${_initialPosition.longitude}');
+      'shop_map_${_initialPosition.latitude}_${_initialPosition.longitude}',
+    );
 
     return Stack(
       children: [
         GoogleMap(
           key: mapKey,
-          initialCameraPosition:
-              CameraPosition(target: _initialPosition, zoom: 14),
+          initialCameraPosition: CameraPosition(
+            target: _initialPosition,
+            zoom: 14,
+          ),
           markers: _markers,
           myLocationEnabled: true,
           myLocationButtonEnabled: true,
@@ -272,7 +274,8 @@ class _CollabNavBarState extends State<CollabNavBar> {
             _mapController = controller;
             _mapController?.animateCamera(
               CameraUpdate.newCameraPosition(
-                  CameraPosition(target: _initialPosition, zoom: 14)),
+                CameraPosition(target: _initialPosition, zoom: 14),
+              ),
             );
             setState(() {});
           },
@@ -285,13 +288,15 @@ class _CollabNavBarState extends State<CollabNavBar> {
             return Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(25)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(25),
+                ),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 6,
-                      spreadRadius: 3),
+                    color: Colors.black26,
+                    blurRadius: 6,
+                    spreadRadius: 3,
+                  ),
                 ],
               ),
               child: ListView.builder(
@@ -304,35 +309,45 @@ class _CollabNavBarState extends State<CollabNavBar> {
                       LatLng shopPos = LatLng(shop['lat'], shop['lng']);
                       _mapController?.animateCamera(
                         CameraUpdate.newCameraPosition(
-                            CameraPosition(target: shopPos, zoom: 16)),
+                          CameraPosition(target: shopPos, zoom: 16),
+                        ),
                       );
                       _showShopDialog(shop['name'], shop);
                     },
                     child: Card(
                       margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       elevation: 3,
                       child: Padding(
                         padding: const EdgeInsets.all(14),
                         child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(shop['name'],
-                                  style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.deepPurple)),
-                              const SizedBox(height: 4),
-                              Text(shop['description'] ?? "",
-                                  style: const TextStyle(color: Colors.grey)),
-                              const SizedBox(height: 4),
-                              Text(
-                                  "City: ${shop['city']}, Phone: ${shop['phone']}",
-                                  style:
-                                      const TextStyle(color: Colors.grey)),
-                            ]),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              shop['name'],
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.deepPurple,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              shop['description'] ?? "",
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "City: ${shop['city']}, Phone: ${shop['phone']}",
+                              style: const TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -346,18 +361,25 @@ class _CollabNavBarState extends State<CollabNavBar> {
   }
 
   NavigationDestination _buildNavItem(
-      IconData icon, IconData selectedIcon, String label, int index) {
+    IconData icon,
+    IconData selectedIcon,
+    String label,
+    int index,
+  ) {
     final bool isSelected = _selectedIndex == index;
     return NavigationDestination(
       icon: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color:
-                isSelected ? const Color(0xFF4B00C8) : Colors.transparent),
-        child: Icon(isSelected ? selectedIcon : icon,
-            color: Colors.white, size: isSelected ? 28 : 24),
+          shape: BoxShape.circle,
+          color: isSelected ? const Color(0xFF4B00C8) : Colors.transparent,
+        ),
+        child: Icon(
+          isSelected ? selectedIcon : icon,
+          color: Colors.white,
+          size: isSelected ? 28 : 24,
+        ),
       ),
       label: label,
     );
@@ -368,7 +390,7 @@ class _CollabNavBarState extends State<CollabNavBar> {
     final UserModel? user = currentUser;
 
     final pages = [
-      ColobRequestList(),
+      ShopsListScreen(),
       const CommunityFeedScreen(),
       const CustomerPage(),
     ];
@@ -389,48 +411,60 @@ class _CollabNavBarState extends State<CollabNavBar> {
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14.0),
-              child:
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Row(children: const [
-                  Icon(Icons.group, color: Colors.white, size: 28),
-                  SizedBox(width: 6),
-                  Text("Collaboration",
-                      style: TextStyle(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.group, color: Colors.white, size: 28),
+                      SizedBox(width: 6),
+                      Text(
+                        "Collaboration",
+                        style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 20)),
-                ]),
-                Row(children: [
-                  if (user != null)
-                    GestureDetector(
-                      onTap: () => setState(() => _selectedIndex = 2),
-                      child: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Colors.white.withOpacity(0.25),
-                        child: Text(
-                            user.name.isNotEmpty
-                                ? user.name[0].toUpperCase()
-                                : "?",
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold)),
+                          fontSize: 20,
+                        ),
                       ),
-                    ),
-                  const SizedBox(width: 10),
-                  IconButton(
-                    tooltip: "Logout",
-                    icon: const Icon(Icons.logout, color: Colors.white),
-                    onPressed: () async {
-                      await FirebaseAuth.instance.signOut();
-                      currentUser = null;
-                      if (context.mounted) {
-                        Navigator.of(context)
-                            .pushNamedAndRemoveUntil('/', (r) => false);
-                      }
-                    },
+                    ],
                   ),
-                ]),
-              ]),
+                  Row(
+                    children: [
+                      if (user != null)
+                        GestureDetector(
+                          onTap: () => setState(() => _selectedIndex = 2),
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: Colors.white.withOpacity(0.25),
+                            child: Text(
+                              user.name.isNotEmpty
+                                  ? user.name[0].toUpperCase()
+                                  : "?",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 10),
+                      IconButton(
+                        tooltip: "Logout",
+                        icon: const Icon(Icons.logout, color: Colors.white),
+                        onPressed: () async {
+                          await FirebaseAuth.instance.signOut();
+                          currentUser = null;
+                          if (context.mounted) {
+                            Navigator.of(
+                              context,
+                            ).pushNamedAndRemoveUntil('/', (r) => false);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -440,15 +474,17 @@ class _CollabNavBarState extends State<CollabNavBar> {
         margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-              colors: [Color(0xFF6A00F8), Color(0xFF7C4DFF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight),
+            colors: [Color(0xFF6A00F8), Color(0xFF7C4DFF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           borderRadius: BorderRadius.circular(5),
           boxShadow: [
             BoxShadow(
-                color: const Color(0xFF6A00F8).withOpacity(0.3),
-                blurRadius: 10,
-                offset: const Offset(0, 4))
+              color: const Color(0xFF6A00F8).withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: ClipRRect(
@@ -457,18 +493,21 @@ class _CollabNavBarState extends State<CollabNavBar> {
             data: NavigationBarThemeData(
               indicatorColor: Colors.transparent,
               backgroundColor: Colors.transparent,
-              labelTextStyle:
-                  MaterialStateProperty.resolveWith<TextStyle>((states) {
+              labelTextStyle: MaterialStateProperty.resolveWith<TextStyle>((
+                states,
+              ) {
                 if (states.contains(MaterialState.selected)) {
                   return const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12);
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  );
                 }
                 return const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 12);
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                );
               }),
             ),
             child: NavigationBar(
@@ -485,10 +524,24 @@ class _CollabNavBarState extends State<CollabNavBar> {
               },
               labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
               destinations: [
-                _buildNavItem(Icons.store_mall_directory_outlined, Icons.store,
-                    "Stores", 0),
-                _buildNavItem(Icons.people_outline, Icons.people, "Community", 1),
-                _buildNavItem(Icons.person_outline, Icons.person, "Customer", 2),
+                _buildNavItem(
+                  Icons.store_mall_directory_outlined,
+                  Icons.store,
+                  "Stores",
+                  0,
+                ),
+                _buildNavItem(
+                  Icons.people_outline,
+                  Icons.people,
+                  "Community",
+                  1,
+                ),
+                _buildNavItem(
+                  Icons.person_outline,
+                  Icons.person,
+                  "Customer",
+                  2,
+                ),
                 _buildNavItem(Icons.map_outlined, Icons.map, "Show Map", 3),
               ],
             ),

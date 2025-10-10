@@ -68,7 +68,9 @@ class _CustomerPageState extends State<CustomerPage> {
             markerId: const MarkerId("user_location"),
             position: _initialPosition,
             infoWindow: const InfoWindow(title: "You are here"),
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              BitmapDescriptor.hueAzure,
+            ),
           ),
         );
         _loadingMap = false;
@@ -89,7 +91,9 @@ class _CustomerPageState extends State<CustomerPage> {
   // ------------------- Load Shops -------------------
   Future<void> _loadShops() async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('stores').get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('stores')
+          .get();
 
       final newMarkers = <Marker>{};
       final shopsData = <Map<String, dynamic>>[];
@@ -161,7 +165,11 @@ class _CustomerPageState extends State<CustomerPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.storefront, color: Colors.deepPurple, size: 28),
+                const Icon(
+                  Icons.storefront,
+                  color: Colors.deepPurple,
+                  size: 28,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   shopName,
@@ -174,7 +182,11 @@ class _CustomerPageState extends State<CustomerPage> {
               ],
             ),
             const Divider(thickness: 1.2, height: 30),
-            _shopDetailRow(Icons.info_outline, "Description", data['description']),
+            _shopDetailRow(
+              Icons.info_outline,
+              "Description",
+              data['description'],
+            ),
             _shopDetailRow(Icons.location_city_rounded, "City", data['city']),
             _shopDetailRow(Icons.call, "Phone", data['phone']),
             _shopDetailRow(Icons.place, "Address", data['address']),
@@ -190,7 +202,10 @@ class _CustomerPageState extends State<CustomerPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 14,
+                    horizontal: 32,
+                  ),
                 ),
               ),
             ),
@@ -229,11 +244,16 @@ class _CustomerPageState extends State<CustomerPage> {
   // ------------------- Map Section -------------------
   Widget _mapSection() {
     return _loadingMap
-        ? const Center(child: CircularProgressIndicator(color: Colors.deepPurple))
+        ? const Center(
+            child: CircularProgressIndicator(color: Colors.deepPurple),
+          )
         : Stack(
             children: [
               GoogleMap(
-                initialCameraPosition: CameraPosition(target: _initialPosition, zoom: 14),
+                initialCameraPosition: CameraPosition(
+                  target: _initialPosition,
+                  zoom: 14,
+                ),
                 markers: _markers,
                 myLocationEnabled: true,
                 myLocationButtonEnabled: true,
@@ -248,7 +268,9 @@ class _CustomerPageState extends State<CustomerPage> {
                   return Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(25),
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.15),
@@ -273,8 +295,11 @@ class _CustomerPageState extends State<CustomerPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Row(
                             children: const [
-                              Icon(Icons.storefront_outlined,
-                                  color: Colors.deepPurple, size: 22),
+                              Icon(
+                                Icons.storefront_outlined,
+                                color: Colors.deepPurple,
+                                size: 22,
+                              ),
                               SizedBox(width: 8),
                               Text(
                                 "Nearby Shops",
@@ -296,7 +321,10 @@ class _CustomerPageState extends State<CustomerPage> {
                               final shop = _shops[index];
                               return GestureDetector(
                                 onTap: () {
-                                  LatLng shopPos = LatLng(shop['lat'], shop['lng']);
+                                  LatLng shopPos = LatLng(
+                                    shop['lat'],
+                                    shop['lng'],
+                                  );
                                   _mapController?.animateCamera(
                                     CameraUpdate.newCameraPosition(
                                       CameraPosition(target: shopPos, zoom: 16),
@@ -305,16 +333,24 @@ class _CustomerPageState extends State<CustomerPage> {
                                   _showShopDialog(shop['name'], shop);
                                 },
                                 child: Card(
-                                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8,
+                                  ),
                                   elevation: 3,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  shadowColor: Colors.deepPurple.withOpacity(0.3),
+                                  shadowColor: Colors.deepPurple.withOpacity(
+                                    0.3,
+                                  ),
                                   child: ListTile(
                                     leading: CircleAvatar(
                                       backgroundColor: Colors.deepPurple[100],
-                                      child: const Icon(Icons.store, color: Colors.deepPurple),
+                                      child: const Icon(
+                                        Icons.store,
+                                        color: Colors.deepPurple,
+                                      ),
                                     ),
                                     title: Text(
                                       shop['name'],
@@ -327,15 +363,26 @@ class _CustomerPageState extends State<CustomerPage> {
                                       shop['description'],
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(color: Colors.grey),
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                      ),
                                     ),
                                     trailing: IconButton(
-                                      icon: const Icon(Icons.location_on, color: Colors.purple),
+                                      icon: const Icon(
+                                        Icons.location_on,
+                                        color: Colors.purple,
+                                      ),
                                       onPressed: () {
-                                        LatLng shopPos = LatLng(shop['lat'], shop['lng']);
+                                        LatLng shopPos = LatLng(
+                                          shop['lat'],
+                                          shop['lng'],
+                                        );
                                         _mapController?.animateCamera(
                                           CameraUpdate.newCameraPosition(
-                                            CameraPosition(target: shopPos, zoom: 16),
+                                            CameraPosition(
+                                              target: shopPos,
+                                              zoom: 16,
+                                            ),
                                           ),
                                         );
                                       },

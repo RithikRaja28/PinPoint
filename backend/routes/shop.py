@@ -2,6 +2,8 @@
 from flask import Blueprint, request, jsonify, current_app,url_for
 from database import db
 from models.shop_model import ShopModel
+from models.product_model import ProductModel
+from models.campaign_model import CampaignModel
 from datetime import datetime
 import os
 import requests
@@ -71,7 +73,6 @@ def geocode_address(address):
     """
     if not MAPS_API_KEY:
         return (None, None)
-
     try:
         if MAP_PROVIDER.upper() == "GOOGLE":
             url = "https://maps.googleapis.com/maps/api/geocode/json"
@@ -177,11 +178,11 @@ def nearby_shops():
     """
     Query params:
       lat (required), lon (required),
-      radius_meters (optional, default 10000),  -- we default to 10km as requested
+      radius_m (optional, default 10000),  -- default 10km
       limit (optional, default 50)
 
     Returns shops ordered by distance (nearest first) up to radius, plus
-    hasOffer flag if owner_uid has an active campaign.
+    hasOffer flag if owner_uid has an active campaign and ownerUid in result.
     """
     try:
         lat = float(request.args.get("lat", None))
@@ -195,7 +196,7 @@ def nearby_shops():
     except Exception:
         radius_m = 10000.0
 
-    # cap radius to 10 km (safeguard) — you may remove this cap if not desired
+    # cap radius to 10 km (safeguard)
     if radius_m > 10000:
         radius_m = 10000.0
 
@@ -205,7 +206,6 @@ def nearby_shops():
         limit = 50
 
     # Prefer PostGIS: use ST_DWithin + ST_Distance for accurate ordering
-    # ST_MakePoint expects (lon, lat)
     postgis_sql = """
     SELECT
       s.id,
@@ -218,6 +218,7 @@ def nearby_shops():
       s.lon,
       s.avg_spend,
       s.image_url,
+      s.owner_uid,
       -- distance in meters using geography
       ST_Distance(
         ST_SetSRID(ST_MakePoint(COALESCE(s.lon,0), COALESCE(s.lat,0)), 4326)::geography,
@@ -265,6 +266,7 @@ def nearby_shops():
           s.lon,
           s.avg_spend,
           s.image_url,
+          s.owner_uid,
           (6371000 * 2 * asin(sqrt(
             power(sin(radians((COALESCE(s.lat,0) - :lat)/2)),2) +
             cos(radians(:lat)) * cos(radians(COALESCE(s.lat,0))) *
@@ -295,8 +297,7 @@ def nearby_shops():
     # Build response — match frontend Shop model
     results = []
     for r in rows:
-        # rows may be sqlalchemy RowProxy — access by column name
-        # handle missing columns gracefully
+        # rows may be sqlalchemy Row/RowProxy — access by column name
         sid = getattr(r, "id", None)
         name = getattr(r, "name", None)
         category = getattr(r, "category", None)
@@ -304,6 +305,7 @@ def nearby_shops():
         lon_val = getattr(r, "lon", None)
         avg_spend = getattr(r, "avg_spend", None)
         image_url = getattr(r, "image_url", None)
+        owner_uid = getattr(r, "owner_uid", None)
         description = getattr(r, "description", None) or ""
         distance_m = getattr(r, "distance_m", None)
         has_offer = getattr(r, "has_offer", False)
@@ -319,7 +321,7 @@ def nearby_shops():
         except Exception:
             avg_spend_f = None
 
-        # Randomize rating (between 3.5 and 5.0, one decimal)
+        # Randomize rating (between 3.5 and 5.0, one decimal) — optional
         rating = round(random.uniform(3.5, 5.0), 1)
 
         results.append({
@@ -334,6 +336,274 @@ def nearby_shops():
             "snippet": description,      # frontend expects snippet -> use description
             "imageUrl": image_url,
             "rating": rating,
+            "ownerUid": owner_uid  # <-- added owner UID here
         })
 
+    current_app.logger.debug("nearby_shops results: %s", results)
     return jsonify({"count": len(results), "shops": results}), 200
+
+
+# Add this route to the blueprint you prefer, e.g. shop_bp or campaign_bp
+@shop_bp.route("/active_campaigns_nearby", methods=["GET"])
+def active_campaigns_nearby():
+    """
+    Query params:
+      lat (required), lon (required),
+      radius_m (optional, default 10000),  -- maximum 10km by default
+      limit (optional, default 50)
+
+    Returns a list of active campaigns joined with shop details ordered by nearest first.
+    Each item contains both campaign and shop fields so frontend can render offers.
+    """
+    # parse lat/lon
+    try:
+        lat = float(request.args.get("lat", None))
+        lon = float(request.args.get("lon", None))
+    except Exception:
+        return jsonify({"error": "lat and lon query parameters required and must be numeric"}), 400
+
+    # radius (meters) default 10km
+    try:
+        radius_m = float(request.args.get("radius_m", 10000))
+    except Exception:
+        radius_m = 10000.0
+
+    # cap to 10km for safety (remove if you want)
+    if radius_m > 10000:
+        radius_m = 10000.0
+
+    try:
+        limit = int(request.args.get("limit", 50))
+    except Exception:
+        limit = 50
+
+    # PostGIS query: join shops -> campaigns where campaign active
+    postgis_sql = """
+    SELECT
+      s.id        AS shop_id,
+      s.owner_uid AS shop_owner_uid,
+      s.name      AS shop_name,
+      s.category  AS shop_category,
+      s.description AS shop_description,
+      s.address_line,
+      s.city,
+      s.lat,
+      s.lon,
+      s.avg_spend,
+      s.image_url,
+      c.id        AS campaign_id,
+      c.owner_uid AS campaign_owner_uid,
+      c.title     AS campaign_title,
+      c.offer     AS campaign_offer,
+      c.poster_path,
+      c.radius_km,
+      c.start     AS campaign_start,
+      c.end       AS campaign_end,
+      -- compute distance in meters using geography
+      ST_Distance(
+        ST_SetSRID(ST_MakePoint(COALESCE(s.lon,0), COALESCE(s.lat,0)), 4326)::geography,
+        ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography
+      ) AS distance_m
+    FROM shops s
+    JOIN campaigns c
+      ON c.owner_uid IS NOT NULL
+      AND c.owner_uid = s.owner_uid
+    WHERE s.lat IS NOT NULL AND s.lon IS NOT NULL
+      AND c.start <= now() AT TIME ZONE 'utc'
+      AND c.end >= now() AT TIME ZONE 'utc'
+      AND ST_DWithin(
+        ST_SetSRID(ST_MakePoint(COALESCE(s.lon,0), COALESCE(s.lat,0)), 4326)::geography,
+        ST_SetSRID(ST_MakePoint(:lon, :lat), 4326)::geography,
+        :radius_m
+      )
+    ORDER BY distance_m ASC
+    LIMIT :limit
+    """
+
+    try:
+        q = db.session.execute(
+            text(postgis_sql),
+            {"lat": lat, "lon": lon, "radius_m": radius_m, "limit": limit},
+        )
+        rows = q.fetchall()
+    except ProgrammingError as pe:
+        # PostGIS missing or syntax error -> fallback to Haversine raw SQL
+        current_app.logger.warning("PostGIS query failed, falling back to Haversine: %s", pe)
+
+        # Haversine (meters) — earth radius 6371000
+        haversine_sql = """
+        SELECT
+          s.id        AS shop_id,
+          s.owner_uid AS shop_owner_uid,
+          s.name      AS shop_name,
+          s.category  AS shop_category,
+          s.description AS shop_description,
+          s.address_line,
+          s.city,
+          s.lat,
+          s.lon,
+          s.avg_spend,
+          s.image_url,
+          c.id        AS campaign_id,
+          c.owner_uid AS campaign_owner_uid,
+          c.title     AS campaign_title,
+          c.offer     AS campaign_offer,
+          c.poster_path,
+          c.radius_km,
+          c.start     AS campaign_start,
+          c.end       AS campaign_end,
+          (6371000 * 2 * asin(sqrt(
+            power(sin(radians((COALESCE(s.lat,0) - :lat)/2)),2) +
+            cos(radians(:lat)) * cos(radians(COALESCE(s.lat,0))) *
+            power(sin(radians((COALESCE(s.lon,0) - :lon)/2)),2)
+          ))) AS distance_m
+        FROM shops s
+        JOIN campaigns c
+          ON c.owner_uid IS NOT NULL
+          AND c.owner_uid = s.owner_uid
+        WHERE s.lat IS NOT NULL AND s.lon IS NOT NULL
+          AND c.start <= now() AT TIME ZONE 'utc'
+          AND c.end >= now() AT TIME ZONE 'utc'
+        HAVING distance_m <= :radius_m
+        ORDER BY distance_m ASC
+        LIMIT :limit
+        """
+        q = db.session.execute(
+            text(haversine_sql),
+            {"lat": lat, "lon": lon, "radius_m": radius_m, "limit": limit},
+        )
+        rows = q.fetchall()
+    except Exception as e:
+        current_app.logger.exception("Error running active campaigns nearby query: %s", e)
+        return jsonify({"error": "Internal server error"}), 500
+
+    # Build response
+    results = []
+    for r in rows:
+        # Access by column names
+        shop_id = getattr(r, "shop_id", None)
+        shop_name = getattr(r, "shop_name", None)
+        shop_category = getattr(r, "shop_category", None)
+        shop_description = getattr(r, "shop_description", None) or ""
+        shop_lat = getattr(r, "lat", None)
+        shop_lon = getattr(r, "lon", None)
+        avg_spend = getattr(r, "avg_spend", None)
+        image_url = getattr(r, "image_url", None)
+
+        campaign_id = getattr(r, "campaign_id", None)
+        campaign_title = getattr(r, "campaign_title", None)
+        campaign_offer = getattr(r, "campaign_offer", None)
+        poster_path = getattr(r, "poster_path", None)
+        campaign_start = getattr(r, "campaign_start", None)
+        campaign_end = getattr(r, "campaign_end", None)
+
+        distance_m = getattr(r, "distance_m", None)
+        try:
+            distance_m_f = float(distance_m) if distance_m is not None else None
+        except Exception:
+            distance_m_f = None
+
+        try:
+            avg_spend_f = float(avg_spend) if avg_spend is not None else None
+        except Exception:
+            avg_spend_f = None
+
+        # optional randomized rating for frontend
+        rating = round(random.uniform(3.5, 5.0), 1)
+
+        results.append({
+            "shop": {
+                "id": shop_id,
+                "owner_uid": getattr(r, "shop_owner_uid", None),
+                "name": shop_name,
+                "category": shop_category,
+                "description": shop_description,
+                "address_line": getattr(r, "address_line", None),
+                "city": getattr(r, "city", None),
+                "lat": float(shop_lat) if shop_lat is not None else None,
+                "lon": float(shop_lon) if shop_lon is not None else None,
+                "avgSpend": avg_spend_f,
+                "imageUrl": image_url,
+                "rating": rating,
+            },
+            "campaign": {
+                "id": campaign_id,
+                "owner_uid": getattr(r, "campaign_owner_uid", None),
+                "title": campaign_title,
+                "offer": campaign_offer,
+                "poster_path": poster_path,
+                "start": campaign_start.isoformat() if campaign_start else None,
+                "end": campaign_end.isoformat() if campaign_end else None,
+                "radius_km": getattr(r, "radius_km", None),
+            },
+            "distanceMeters": distance_m_f,
+        })
+
+    return jsonify({"count": len(results), "items": results}), 200
+
+
+@shop_bp.route("/shopdetails_and_campaigns", methods=["GET"])
+def shopdetails_and_campaigns():
+    """
+    Query params:
+      owner_uid (required)  -- owner identifier (frontend should send this)
+      include_inactive (optional) -- kept for compatibility; currently ignored
+
+    Returns:
+      {
+        "shop": { ... } | null,           # first shop found for the owner (or null)
+        "shops": [ {...}, ... ],          # all shops for owner (usually 1)
+        "products": [ {...}, ... ],       # products for owner
+        "campaigns": [ {...}, ... ]       # all campaigns for owner (no time filtering)
+      }
+    """
+    try:
+        owner_uid = request.args.get("owner_uid", None)
+        if not owner_uid:
+            return jsonify({"error": "owner_uid query parameter is required"}), 400
+
+        # kept for compatibility (not used to filter any more)
+        include_inactive = request.args.get("include_inactive", "false").lower() in ("1", "true", "yes")
+
+        # Fetch shops belonging to owner (may be zero or multiple)
+        try:
+            shops_q = ShopModel.query.filter(ShopModel.owner_uid == owner_uid).all()
+            shops = [s.to_dict() for s in shops_q]
+            shop_first = shops[0] if shops else None
+        except Exception as e:
+            current_app.logger.exception("Failed to fetch shops for owner %s: %s", owner_uid, e)
+            shops = []
+            shop_first = None
+
+        # Fetch products for this owner
+        try:
+            prods_q = ProductModel.query.filter(ProductModel.owner_uid == owner_uid).all()
+            products = [p.to_dict() for p in prods_q]
+        except Exception as e:
+            current_app.logger.exception("Failed to fetch products for owner %s: %s", owner_uid, e)
+            products = []
+
+        # Fetch campaigns for this owner (NO time filtering)
+        try:
+            campaigns_q = CampaignModel.query.filter(CampaignModel.owner_uid == owner_uid).all()
+            current_app.logger.debug(
+                "Fetched %d campaigns for owner %s (time filter disabled)", len(campaigns_q), owner_uid
+            )
+            campaigns = [c.to_dict() for c in campaigns_q]
+        except Exception as e:
+            current_app.logger.exception("Failed to fetch campaigns for owner %s: %s", owner_uid, e)
+            campaigns = []
+
+        # Build response
+        resp = {
+            "shop": shop_first,
+            "shops": shops,
+            "products": products,
+            "campaigns": campaigns,
+        }
+
+        return jsonify(resp), 200
+
+    except Exception as e:
+        current_app.logger.exception("Error in shopdetails_and_campaigns endpoint: %s", e)
+        return jsonify({"error": "Internal server error"}), 500

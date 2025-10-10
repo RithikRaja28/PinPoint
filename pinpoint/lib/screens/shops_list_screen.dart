@@ -5,6 +5,7 @@ import 'shop_detail_screen.dart';
 import '../globals.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:pinpoint/config.dart';
 
 class ShopsListScreen extends StatefulWidget {
   final double? lat;
@@ -21,6 +22,7 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
   String? _error;
   List<Shop> _shops = [];
   String _query = "";
+  int _selectedIndex = 0; // for bottom nav
 
   @override
   void initState() {
@@ -28,7 +30,7 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
     _fetchShops();
   }
 
-  // ------------------ Replace _fetchShops and helpers with this ------------------
+  // ------------------ Replace _fetchShops and helpers with robust version ------------------
   Future<void> _fetchShops() async {
     setState(() {
       _loading = true;
@@ -41,7 +43,7 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
 
       // Hardcoded endpoint for local testing (you already had this)
       final uri = Uri.parse(
-        "http://192.168.1.9:5000/shops/nearby?lat=13.082700&lon=80.270700&radius=10000000000",
+        '$apiUrl/shops/nearby?lat=28.6139&lon=77.2090&radius=10000000000',
       );
 
       final resp = await http.get(uri);
@@ -82,8 +84,13 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
               ? parseDouble(r['lon'])
               : _extractLon(r['location_wkt']);
 
+          // owner uid: try multiple backend names
+          final String? ownerUid =
+              (r['ownerUid'] ?? r['owner_uid'] ?? r['owner']) as String?;
+
           // Choose image URL fallback if backend returns null/empty
-          final String? imageUrlRaw = r['imageUrl'] as String?;
+          final String? imageUrlRaw =
+              (r['imageUrl'] ?? r['image_url']) as String?;
           final String imageUrl =
               (imageUrlRaw != null && imageUrlRaw.isNotEmpty)
               ? imageUrlRaw
@@ -103,9 +110,9 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
             snippet: r['snippet'] ?? r['address'] ?? "Local shop nearby",
             imageUrl: imageUrl,
             rating: parseDouble(r['rating'] ?? r['avg_rating'] ?? 4.0),
+            ownerUid: ownerUid, // <--- set ownerUid here
           );
         }).toList();
-
         // optional: sort by distance if you want nearest first
         shops.sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
 
@@ -166,6 +173,7 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
   }
 
   void _unfocus() => FocusScope.of(context).unfocus();
+
   Widget _imageFallback(Shop s) {
     return Container(
       color: const Color(0xFFF2F2F6),
@@ -209,7 +217,7 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
                       height: 88,
                       child: s.imageUrl != null && s.imageUrl!.isNotEmpty
                           ? Image.network(
-                              s.imageUrl!,
+                              apiUrl + s.imageUrl!,
                               fit: BoxFit.cover,
                               loadingBuilder: (ctx, child, prog) {
                                 if (prog == null) return child;
@@ -281,7 +289,8 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
 
                       const SizedBox(height: 6),
 
-                      // Category (smaller)
+                      // Category (smaller) -- don't translate shop-specific category data;
+                      // but provide a translated fallback if null/empty
                       Text(
                         s.category ?? "—",
                         style: TextStyle(color: Colors.grey[700], fontSize: 13),
@@ -309,7 +318,7 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
 
                       const SizedBox(height: 8),
 
-                      // Snippet (two lines)
+                      // Snippet (two lines). Snippet might be user content; we don't translate it here.
                       Text(
                         s.snippet ?? '',
                         style: TextStyle(color: Colors.grey[600], fontSize: 12),
@@ -380,6 +389,16 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
     return "${km.toStringAsFixed(1)} km";
   }
 
+  void _onNavTapped(int index) {
+    // simple local state change for bottom nav. Hook functionality as needed
+    setState(() {
+      _selectedIndex = index;
+    });
+
+    // Example: if favorites/profile require navigation, handle here
+    // For now, we only change selected index and keep same content.
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -388,11 +407,51 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
         resizeToAvoidBottomInset: true,
         backgroundColor: const Color(0xFFF7F8FB),
         appBar: AppBar(
-          title: const Text("Nearby Shops"),
+          // Using translateText (as in your other file) to show translated title widget
+          title: translateText("Nearby Shops"),
+          centerTitle: true,
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
-            IconButton(onPressed: _fetchShops, icon: const Icon(Icons.refresh)),
+            IconButton(
+              onPressed: _fetchShops,
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh',
+            ),
+            IconButton(
+              onPressed: () {
+                // placeholder for profile or settings
+              },
+              icon: const Icon(Icons.person_outline),
+              tooltip: 'Profile',
+            ),
+          ],
+          leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              // open drawer or menu - implement if you have a drawer
+            },
+          ),
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: _onNavTapped,
+          selectedItemColor: const Color(0xFF4A148C),
+          items: [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.explore_outlined),
+              label: "Explore",
+              // We can't call translateText() here because BottomNavigationBarItem.label expects String.
+              // If you have a translate-to-string helper, swap it in. For now label remains English.
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.favorite_border),
+              label: "Favorites",
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person_outline),
+              label: "Profile",
+            ),
           ],
         ),
         body: SafeArea(
@@ -430,10 +489,15 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.all(12),
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
+                  // Use translateText to render translated error message (matches pattern in CollobRequestStore)
+                  child: translateText(_error!),
+                ),
+
+              // If zero shops show a friendly translated empty state
+              if (!_loading && _shops.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: translateText("No shops found nearby."),
                 ),
 
               // List
@@ -458,6 +522,16 @@ class _ShopsListScreenState extends State<ShopsListScreen> {
             ],
           ),
         ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            // example quick action
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: translateText("Quick action tapped")),
+            );
+          },
+          backgroundColor: const Color(0xFF7E57C2),
+          child: const Icon(Icons.my_location),
+        ),
       ),
     );
   }
@@ -476,7 +550,7 @@ class Shop {
   final String? snippet;
   final String? imageUrl;
   final double rating;
-
+  final String? ownerUid;
   Shop({
     required this.id,
     required this.name,
@@ -486,6 +560,7 @@ class Shop {
     required this.avgSpend,
     required this.hasOffer,
     required this.distanceMeters,
+    this.ownerUid,
     this.snippet,
     this.imageUrl,
     this.rating = 4.2,

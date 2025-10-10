@@ -53,7 +53,7 @@ app.register_blueprint(poster_bp, url_prefix="/api")
 app.register_blueprint(shop_bp, url_prefix="/shops")
 app.register_blueprint(geofence_bp, url_prefix="/api/geofence")
 app.register_blueprint(device_bp, url_prefix="/device")
-app.register_blueprint(product_bp, url_prefix="/products")
+app.register_blueprint(product_bp, url_prefix="/api/products")
 # app.register_blueprint(fence_logic, url_prefix="/api/geofence/callback")
 
 

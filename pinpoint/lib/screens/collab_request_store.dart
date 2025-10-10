@@ -15,7 +15,10 @@ class CollobRequestStore extends StatelessWidget {
         .get();
   }
 
-  Future<void> sendCollabRequest(BuildContext context, String receiverUid) async {
+  Future<void> sendCollabRequest(
+    BuildContext context,
+    String receiverUid,
+  ) async {
     final currentUid = currentUser?.uid ?? "";
     if (currentUid.isEmpty) return;
 
@@ -55,11 +58,7 @@ class CollobRequestStore extends StatelessWidget {
         if (!snapshot.hasData || !snapshot.data!.exists) {
           return SizedBox(
             height: 200,
-            child: Center(
-              child: translateText(
-                "Store not found.",
-              ),
-            ),
+            child: Center(child: translateText("Store not found.")),
           );
         }
 
@@ -111,7 +110,10 @@ class CollobRequestStore extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.black54),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.black54,
+                      ),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
@@ -187,11 +189,7 @@ class CollobRequestStore extends StatelessWidget {
         children: [
           Icon(icon, color: const Color(0xFF6A1B9A)),
           const SizedBox(width: 10),
-          Expanded(
-            child: translateText(
-              text,
-            ),
-          ),
+          Expanded(child: translateText(text)),
         ],
       ),
     );

@@ -21,10 +21,12 @@ class _BusinessProfileState extends State<BusinessProfile> {
     {"name": "Other", "icon": Icons.category},
   ];
 
-  // ✅ Simple helper that directly returns translated String
   Future<String> translateString(String text) async {
     try {
-      final translated = await globalTranslator.translate(text, to: selectedLang);
+      final translated = await globalTranslator.translate(
+        text,
+        to: selectedLang,
+      );
       return translated.text;
     } catch (_) {
       return text;
@@ -273,6 +275,35 @@ class _BusinessProfileState extends State<BusinessProfile> {
                 ),
               ),
 
+              const SizedBox(height: 30),
+
+              // 🛍️ Manage Products Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 60),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.inventory_2_outlined, size: 22),
+                    label: const Text(
+                      "Manage Products",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/owner_products');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7E57C2),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 4,
+                    ),
+                  ),
+                ),
+              ),
+
               const SizedBox(height: 50),
 
               // 🚪 Sign Out Button
@@ -285,8 +316,9 @@ class _BusinessProfileState extends State<BusinessProfile> {
                     onPressed: () async {
                       await FirebaseAuth.instance.signOut();
                       currentUser = null;
-                      Navigator.of(context)
-                          .pushNamedAndRemoveUntil('/', (route) => false);
+                      Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil('/', (route) => false);
                     },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -294,7 +326,7 @@ class _BusinessProfileState extends State<BusinessProfile> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                       elevation: 4,
-                      backgroundColor: const Color(0xFF7E57C2),
+                      backgroundColor: const Color(0xFFB39DDB),
                       foregroundColor: Colors.white,
                     ),
                     label: translateText("Sign Out"),

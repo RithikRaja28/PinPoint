@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:translator/translator.dart';
 import 'package:pinpoint/user_model.dart';
 import 'package:http/http.dart' as http;
+import 'package:pinpoint/config.dart';
 
 /// 🌍 Global Variables
 String selectedLang = 'en';
@@ -13,7 +14,7 @@ final GlobalKey<FormState> signupFormKey = GlobalKey<FormState>();
 final GlobalKey<FormState> loginFormKey = GlobalKey<FormState>();
 
 /// 🛰️ Backend API Endpoint
-const String endpoint1 = "http://192.168.1.11:5000";
+String endpoint1 = apiUrl;
 
 /// 📍 Location Details
 double? currentLat;

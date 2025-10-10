@@ -1,9 +1,12 @@
 // lib/screens/shop_detail_screen.dart
 import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'shops_list_screen.dart';
+import 'package:http/http.dart' as http;
+import 'package:pinpoint/config.dart'; // ensure apiUrl is exported here
 
 const Color kPrimary = Color(0xFF7E57C2);
 const Color kAccentLight = Color(0xFFEDE7F6);
@@ -20,30 +23,411 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
   bool _loading = false;
   String? _error;
   List<Product> _products = [];
+  List<Map<String, dynamic>> _campaigns = []; // store all campaigns
 
   @override
   void initState() {
     super.initState();
-    _fetchProducts();
+    _fetchDetails();
   }
 
-  Future<void> _fetchProducts() async {
+  Future<void> _fetchDetails() async {
     setState(() {
       _loading = true;
       _error = null;
     });
 
     try {
-      // mocked
-      await Future.delayed(const Duration(milliseconds: 200));
+      final ownerUid = widget.shop.ownerUid;
+      if (ownerUid == null || ownerUid.isEmpty) {
+        setState(() {
+          _error = "Missing owner ID for this shop.";
+          _products = mockProductsByShop[widget.shop.id] ?? [];
+          _campaigns = [];
+        });
+        return;
+      }
+
+      final uri = Uri.parse(
+        '$apiUrl/shops/shopdetails_and_campaigns?owner_uid=$ownerUid',
+      );
+
+      final resp = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (resp.statusCode != 200) {
+        setState(() {
+          _error = 'Server returned ${resp.statusCode}';
+          _products = mockProductsByShop[widget.shop.id] ?? [];
+          _campaigns = [];
+        });
+        return;
+      }
+
+      final Map<String, dynamic> data = json.decode(resp.body);
+      debugPrint('shop details response: ${resp.body}');
+
+      // parse products list
+      final List productsData = (data['products'] ?? []) as List;
+      final parsedProducts = productsData.map((p) {
+        final id = p['id'] is int ? p['id'] : int.tryParse('${p['id']}') ?? 0;
+        final price = (p['price'] != null)
+            ? (p['price'] is num
+                  ? (p['price'] as num).toDouble()
+                  : double.tryParse('${p['price']}') ?? 0.0)
+            : 0.0;
+        return Product(
+          id: id,
+          name: p['name'] ?? 'Unnamed',
+          description: p['description'],
+          price: price,
+          savings: p.containsKey('savings') && p['savings'] != null
+              ? (p['savings'] is num
+                    ? (p['savings'] as num).toDouble()
+                    : double.tryParse('${p['savings']}'))
+              : null,
+          imageUrl: p['image_url'] ?? p['imageUrl'] ?? p['image'],
+        );
+      }).toList();
+
+      // parse campaigns - accept any list of maps
+      final List campaignsData = (data['campaigns'] ?? []) as List;
+      final parsedCampaigns = campaignsData.map<Map<String, dynamic>>((c) {
+        if (c is Map<String, dynamic>) return c;
+        // defensive: if objects are not map-typed, attempt decode
+        return Map<String, dynamic>.from(c as Map);
+      }).toList();
+
       setState(() {
-        _products = mockProductsByShop[widget.shop.id] ?? [];
+        _products = parsedProducts.isNotEmpty
+            ? parsedProducts
+            : (mockProductsByShop[widget.shop.id] ?? []);
+        _campaigns = parsedCampaigns;
       });
-    } catch (e) {
-      setState(() => _error = "Error: $e");
+    } catch (e, st) {
+      debugPrint('Error fetching shop details: $e\n$st');
+      setState(() {
+        _error = "Error: $e";
+        _products = mockProductsByShop[widget.shop.id] ?? [];
+        _campaigns = [];
+      });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  /// Campaign card now accepts a `cardHeight` and scales internal image/text accordingly.
+  Widget _campaignCard(
+    Map<String, dynamic> c, {
+    required double cardHeight,
+    double? width,
+  }) {
+    if (c.isEmpty) return const SizedBox.shrink();
+    final title = c['title'] ?? 'Offer';
+    final offer = c['offer'] ?? '';
+    final poster =
+        c['poster_path'] ?? c['posterPath'] ?? c['poster'] ?? c['poster_url'];
+    final start = c['start']?.toString();
+    final end = c['end']?.toString();
+
+    String posterUrl = '';
+    if (poster != null && poster.toString().isNotEmpty) {
+      final posterStr = poster.toString();
+      posterUrl = posterStr.startsWith('/') ? (apiUrl + posterStr) : posterStr;
+    }
+
+    // width adaptive (keeps previous behaviour)
+    final cardWidth =
+        width ?? (MediaQuery.of(context).size.width * 0.86).clamp(240.0, 520.0);
+
+    // derive image size from cardHeight so total content fits
+    final double sidePadding = 10.0 * 2; // padding inside Material
+    final double actionsWidth = 76; // approximate width for the action column
+    final double availableHeight = cardHeight - 20; // some breathing room
+    final double imageSize = (availableHeight * 0.62).clamp(56.0, 84.0);
+
+    return Container(
+      width: cardWidth,
+      margin: const EdgeInsets.only(right: 12),
+      child: Material(
+        color: Colors.white,
+        elevation: 1.8,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: SizedBox(
+            height: cardHeight - 10, // make internal size match cardHeight
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // poster / image with dynamic size
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: SizedBox(
+                    width: imageSize,
+                    height: imageSize,
+                    child: posterUrl.isNotEmpty
+                        ? Image.network(
+                            posterUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: const Color(0xFFF2F2F6),
+                              child: const Icon(Icons.local_offer_outlined),
+                            ),
+                          )
+                        : Container(
+                            color: const Color(0xFFF2F2F6),
+                            child: const Icon(Icons.local_offer_outlined),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // text
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // title row
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.5,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        offer,
+                        style: const TextStyle(
+                          color: Colors.black87,
+                          fontSize: 13,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (start != null)
+                            Flexible(
+                              child: Text(
+                                "Starts: ${_shortDate(start)}",
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: Colors.grey[600],
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          if (end != null) ...[
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                "Ends: ${_shortDate(end)}",
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: Colors.grey[600],
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // actions - keep narrow so card doesn't expand vertically
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Campaign action (demo)"),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kPrimary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        textStyle: const TextStyle(fontSize: 13),
+                      ),
+                      child: const Text("View"),
+                    ),
+                    const SizedBox(height: 6),
+                    OutlinedButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Share campaign (demo)"),
+                          ),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        textStyle: const TextStyle(fontSize: 13),
+                      ),
+                      child: const Text("Share"),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionHeader(String title, {int? count}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFB39DDB), Color(0xFF7E57C2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: kPrimary.withOpacity(0.12),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  title.toLowerCase().contains('offer')
+                      ? Icons.local_offer
+                      : Icons.shopping_bag,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          if (count != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                "$count",
+                style: TextStyle(
+                  color: Colors.grey[800],
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: _fetchDetails,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text("Refresh"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _shortDate(String input) {
+    try {
+      final d = DateTime.parse(input);
+      return "${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}";
+    } catch (_) {
+      return input;
+    }
+  }
+
+  Widget _emptyState({required String title, required String body}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28.0, vertical: 18),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFB39DDB), Color(0xFF7E57C2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: kPrimary.withOpacity(0.12),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.storefront_outlined,
+              color: Colors.white,
+              size: 56,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            body,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.black54),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            onPressed: _fetchDetails,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kPrimary,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text("Refresh"),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _productCard(Product p) {
@@ -62,22 +446,37 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
               child: SizedBox(
                 width: 72,
                 height: 72,
-                child: Image.network(
-                  p.imageUrl ?? '',
-                  fit: BoxFit.cover,
-                  errorBuilder: (ctx, e, st) => Container(
-                    color: const Color(0xFFF2F2F6),
-                    child: Center(
-                      child: Text(
-                        p.name.isNotEmpty ? p.name[0] : '',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          color: Colors.black26,
+                child: p.imageUrl != null && p.imageUrl!.isNotEmpty
+                    ? Image.network(
+                        p.imageUrl!.startsWith('/')
+                            ? apiUrl + p.imageUrl!
+                            : p.imageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, e, st) => Container(
+                          color: const Color(0xFFF2F2F6),
+                          child: Center(
+                            child: Text(
+                              p.name.isNotEmpty ? p.name[0] : '',
+                              style: const TextStyle(
+                                fontSize: 22,
+                                color: Colors.black26,
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: const Color(0xFFF2F2F6),
+                        child: Center(
+                          child: Text(
+                            p.name.isNotEmpty ? p.name[0] : '',
+                            style: const TextStyle(
+                              fontSize: 22,
+                              color: Colors.black26,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
               ),
             ),
 
@@ -91,12 +490,16 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                   Text(
                     p.name,
                     style: const TextStyle(fontWeight: FontWeight.w700),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   if (p.description != null) ...[
                     const SizedBox(height: 6),
                     Text(
                       p.description!,
                       style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                   const SizedBox(height: 8),
@@ -221,7 +624,6 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         Navigator.pop(ctx);
-                        // TODO: wire share_plus
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text("Share action (demo)")),
                         );
@@ -283,7 +685,6 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
     );
 
     if (res == true && ctl.text.trim().isNotEmpty) {
-      // TODO: send to backend
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Thanks — your comment was posted (demo)"),
@@ -298,6 +699,13 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
     final mq = MediaQuery.of(context);
     final bannerHeight = min(220.0, mq.size.height * 0.28);
 
+    // Compute a dynamic campaign area height based on screen height.
+    // Keeps it between 110 and 150 and uses a proportion on very tall devices.
+    final double campaignHeight = (() {
+      final double byScreen = mq.size.height * 0.16;
+      return byScreen.clamp(110.0, 150.0);
+    })();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FB),
       appBar: AppBar(
@@ -309,161 +717,264 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
             color: Colors.black87,
             fontWeight: FontWeight.w700,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // banner
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: bannerHeight),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      // image
-                      Image.network(
-                        s.imageUrl ?? '',
-                        fit: BoxFit.cover,
-                        loadingBuilder: (ctx, child, progress) {
-                          if (progress == null) return child;
-                          return Container(
-                            color: const Color(0xFFF2F2F6),
-                            child: const Center(
-                              child: CircularProgressIndicator(),
+        child: CustomScrollView(
+          slivers: [
+            // banner (sliver adapter)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 6,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: bannerHeight),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(
+                          (s.imageUrl != null &&
+                                  s.imageUrl!.isNotEmpty &&
+                                  s.imageUrl!.startsWith('/')
+                              ? apiUrl + s.imageUrl!
+                              : (s.imageUrl ?? '')),
+                          fit: BoxFit.cover,
+                          loadingBuilder: (ctx, child, progress) {
+                            if (progress == null) return child;
+                            return Container(
+                              color: const Color(0xFFF2F2F6),
+                              child: const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+                          },
+                          errorBuilder: (ctx, err, st) =>
+                              Container(color: const Color(0xFFF2F2F6)),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                kPrimary.withOpacity(0.28),
+                                Colors.transparent,
+                              ],
                             ),
-                          );
-                        },
-                        errorBuilder: (ctx, err, st) =>
-                            Container(color: const Color(0xFFF2F2F6)),
-                      ),
-                      // purple gradient overlay (modern touch)
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              kPrimary.withOpacity(0.28),
-                              Colors.transparent,
+                          ),
+                        ),
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          bottom: 12,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      s.name,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "${s.category ?? '—'} • Avg ₹${s.avgSpend.toStringAsFixed(0)} • ${_formatDistance(s.distanceMeters)}",
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 13,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white70,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "${s.rating.toStringAsFixed(1)}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      "rating",
+                                      style: TextStyle(fontSize: 10),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                      ),
-                      Positioned(
-                        left: 12,
-                        right: 12,
-                        bottom: 12,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    s.name,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "${s.category ?? '—'} • Avg ₹${s.avgSpend.toStringAsFixed(0)} • ${_formatDistance(s.distanceMeters)}",
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white70,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    "${s.rating.toStringAsFixed(1)}",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  const Text(
-                                    "rating",
-                                    style: TextStyle(fontSize: 10),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
 
-            // Actions - Directions (page-level)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => _openDirections(s.lat, s.lon),
-                      icon: const Icon(Icons.directions, color: Colors.white),
-                      label: const Text(
-                        "Directions",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
+            // Directions button
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _openDirections(s.lat, s.lon),
+                        icon: const Icon(Icons.directions, color: Colors.white),
+                        label: const Text(
+                          "Directions",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kPrimary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kPrimary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
-            const SizedBox(height: 10),
+            // small spacing / loading
+            SliverToBoxAdapter(child: const SizedBox(height: 10)),
 
-            if (_loading) const LinearProgressIndicator(color: kPrimary),
+            if (_loading)
+              SliverToBoxAdapter(
+                child: const LinearProgressIndicator(color: kPrimary),
+              ),
 
             if (_error != null)
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(_error!, style: const TextStyle(color: Colors.red)),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
               ),
 
-            // products
-            Expanded(
-              child: _products.isEmpty && !_loading
-                  ? const Center(child: Text("No products or offers found"))
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      itemCount: _products.length,
-                      itemBuilder: (_, i) => _productCard(_products[i]),
-                    ),
+            // Offers header
+            SliverToBoxAdapter(
+              child: _sectionHeader(
+                "Offers",
+                count: _campaigns.isNotEmpty ? _campaigns.length : 0,
+              ),
             ),
+
+            // Offers horizontal list — now uses dynamic campaignHeight and passes cardHeight to each card
+            if (_campaigns.isNotEmpty)
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: campaignHeight, // dynamic height
+                  child: ListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _campaigns.length,
+                    itemBuilder: (ctx, i) => _campaignCard(
+                      _campaigns[i],
+                      cardHeight: campaignHeight - 8, // pass inner height
+                    ),
+                  ),
+                ),
+              ),
+
+            if (_campaigns.isEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.local_offer_outlined,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(width: 12),
+                        const Expanded(
+                          child: Text(
+                            "No active offers right now. Check back later for promotions.",
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: _fetchDetails,
+                          child: const Text("Refresh"),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+            // small spacing
+            SliverToBoxAdapter(child: const SizedBox(height: 8)),
+
+            // Products header and list
+            if (_products.isEmpty)
+              SliverFillRemaining(
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: _emptyState(
+                    title: "No products available",
+                    body:
+                        "This shop doesn't have any listed products yet. You can still view the store or contact them.",
+                  ),
+                ),
+              )
+            else
+              // list of products as sliver list
+              SliverList(
+                delegate: SliverChildBuilderDelegate((ctx, index) {
+                  if (index == 0) {
+                    return _sectionHeader("Products", count: _products.length);
+                  }
+                  final product = _products[index - 1];
+                  return _productCard(product);
+                }, childCount: _products.length + 1),
+              ),
+
+            // bottom padding so last item isn't glued to nav bars
+            SliverToBoxAdapter(child: const SizedBox(height: 24)),
           ],
         ),
       ),
@@ -496,6 +1007,7 @@ class Product {
   });
 }
 
+// keep your existing mocks as a fallback
 final Map<int, List<Product>> mockProductsByShop = {
   1: [
     Product(

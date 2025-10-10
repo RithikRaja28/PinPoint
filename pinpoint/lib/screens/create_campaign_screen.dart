@@ -7,7 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:pinpoint/globals.dart'; 
+import 'package:pinpoint/globals.dart';
+import 'package:pinpoint/config.dart';
 
 class CreateCampaignScreen extends StatefulWidget {
   const CreateCampaignScreen({super.key});
@@ -128,7 +129,9 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
 
   Future<void> _pickPoster() async {
     try {
-      final XFile? picked = await _picker.pickImage(source: ImageSource.gallery);
+      final XFile? picked = await _picker.pickImage(
+        source: ImageSource.gallery,
+      );
       if (picked != null) {
         setState(() => _posterFile = File(picked.path));
         _showSnack("Poster uploaded.");
@@ -141,7 +144,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   Future<void> _generatePosterDummy() async {
     setState(() => _generatingPoster = true);
     try {
-      final uri = Uri.parse("http://10.82.69.61:5000/api/poster");
+      final uri = Uri.parse('$apiUrl/api/poster');
       final request = http.MultipartRequest('POST', uri);
       request.fields['shop_name'] = _titleController.text.trim();
       request.fields['offer'] = _offerController.text.trim();
@@ -149,8 +152,9 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       request.fields['start'] = _combinedStart.toIso8601String();
       request.fields['end'] = _combinedEnd.toIso8601String();
       if (_posterFile != null) {
-        request.files
-            .add(await http.MultipartFile.fromPath('logo', _posterFile!.path));
+        request.files.add(
+          await http.MultipartFile.fromPath('logo', _posterFile!.path),
+        );
       }
 
       final response = await request.send();
@@ -176,7 +180,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     final user = FirebaseAuth.instance.currentUser;
 
     try {
-      final uri = Uri.parse('http://10.82.69.61:5000/api/campaigns/');
+      final uri = Uri.parse('$apiUrl/api/campaigns/');
       final request = http.MultipartRequest('POST', uri);
 
       if (user != null) request.fields['owner_uid'] = user.uid;
@@ -190,8 +194,9 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       if (_posterUrl != null && _posterUrl!.isNotEmpty) {
         request.fields['poster_url'] = _posterUrl!;
       } else if (_posterFile != null) {
-        request.files
-            .add(await http.MultipartFile.fromPath('poster', _posterFile!.path));
+        request.files.add(
+          await http.MultipartFile.fromPath('poster', _posterFile!.path),
+        );
       }
 
       final streamed = await request.send();
@@ -206,10 +211,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
           final Map body = json.decode(responseStr);
           if (body.containsKey('error')) serverMsg = " — ${body['error']}";
         } catch (_) {}
-        _showSnack(
-          "Failed (code ${streamed.statusCode})$serverMsg",
-          true,
-        );
+        _showSnack("Failed (code ${streamed.statusCode})$serverMsg", true);
       }
     } catch (e) {
       _showSnack("Error: $e", true);
@@ -227,8 +229,10 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       lastDate: now.add(const Duration(days: 365)),
     );
     if (pickedDate != null) {
-      final pickedTime =
-          await showTimePicker(context: context, initialTime: TimeOfDay.now());
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
       if (pickedTime != null) {
         setState(() {
           _startDate = pickedDate;
@@ -247,8 +251,10 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       lastDate: now.add(const Duration(days: 365)),
     );
     if (pickedDate != null) {
-      final pickedTime =
-          await showTimePicker(context: context, initialTime: TimeOfDay.now());
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
       if (pickedTime != null) {
         setState(() {
           _endDate = pickedDate;
@@ -371,8 +377,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
                     const SizedBox(height: 20),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 400),
-                      transitionBuilder:
-                          (child, anim) => FadeTransition(opacity: anim, child: child),
+                      transitionBuilder: (child, anim) =>
+                          FadeTransition(opacity: anim, child: child),
                       child: steps[_currentStep],
                     ),
                     const SizedBox(height: 100),
@@ -410,9 +416,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
         children: [
           const Icon(Icons.campaign_rounded, color: Colors.white, size: 28),
           const SizedBox(width: 10),
-          translateText(
-            "Launch Your Campaign 🚀",
-          ),
+          translateText("Launch Your Campaign 🚀"),
         ],
       ),
     );
@@ -546,7 +550,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.network(
-          "http://10.82.69.61:5000" + _posterUrl!,
+          '$apiUrl' + _posterUrl!,
           height: height,
           fit: BoxFit.cover,
         ),
@@ -564,118 +568,118 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   }
 
   Widget _basicInfoCard() => _cardWrapper("Basic Details", [
-        _textInput(
-          "Campaign Title",
-          _titleController,
-          hint: "e.g. Weekend Coffee Special",
-        ),
-        const SizedBox(height: 16),
-        _textInput(
-          "Offer Text",
-          _offerController,
-          hint: "e.g. Get 20% off on all lattes",
-                  maxLines: 4,
-        ),
-      ]);
+    _textInput(
+      "Campaign Title",
+      _titleController,
+      hint: "e.g. Weekend Coffee Special",
+    ),
+    const SizedBox(height: 16),
+    _textInput(
+      "Offer Text",
+      _offerController,
+      hint: "e.g. Get 20% off on all lattes",
+      maxLines: 4,
+    ),
+  ]);
 
   Widget _targetingCard() => _cardWrapper("Targeting 🎯", [
-        translateText("Target radius"),
-        Slider(
-          value: _radiusKm,
-          min: 0.5,
-          max: 5.0,
-          divisions: 45,
-          label: "${_radiusKm.toStringAsFixed(1)} km",
-          activeColor: brandMid,
-          onChanged: (v) => setState(() => _radiusKm = v),
-        ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: translateText("${_radiusKm.toStringAsFixed(1)} km radius"),
-        ),
-        const SizedBox(height: 12),
-        _dateTile(
-          "Start Date & Time",
-          Icons.play_arrow_rounded,
-          _startDate != null && _startTime != null
-              ? "${DateFormat.yMMMd().format(_startDate!)}  ${_startTime!.format(context)}"
-              : "Pick start date & time",
-          _pickStartDateTime,
-        ),
-        const SizedBox(height: 10),
-        _dateTile(
-          "End Date & Time",
-          Icons.stop_circle_rounded,
-          _endDate != null && _endTime != null
-              ? "${DateFormat.yMMMd().format(_endDate!)}  ${_endTime!.format(context)}"
-              : "Pick end date & time",
-          _pickEndDateTime,
-        ),
-      ]);
+    translateText("Target radius"),
+    Slider(
+      value: _radiusKm,
+      min: 0.5,
+      max: 5.0,
+      divisions: 45,
+      label: "${_radiusKm.toStringAsFixed(1)} km",
+      activeColor: brandMid,
+      onChanged: (v) => setState(() => _radiusKm = v),
+    ),
+    Align(
+      alignment: Alignment.centerLeft,
+      child: translateText("${_radiusKm.toStringAsFixed(1)} km radius"),
+    ),
+    const SizedBox(height: 12),
+    _dateTile(
+      "Start Date & Time",
+      Icons.play_arrow_rounded,
+      _startDate != null && _startTime != null
+          ? "${DateFormat.yMMMd().format(_startDate!)}  ${_startTime!.format(context)}"
+          : "Pick start date & time",
+      _pickStartDateTime,
+    ),
+    const SizedBox(height: 10),
+    _dateTile(
+      "End Date & Time",
+      Icons.stop_circle_rounded,
+      _endDate != null && _endTime != null
+          ? "${DateFormat.yMMMd().format(_endDate!)}  ${_endTime!.format(context)}"
+          : "Pick end date & time",
+      _pickEndDateTime,
+    ),
+  ]);
 
   Widget _posterCard() => _cardWrapper("Campaign Poster 🖼️", [
-        _posterPreview(),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _pickPoster,
-                icon: const Icon(Icons.photo_library_rounded),
-                label: translateText("Upload Poster"),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _generatingPoster ? null : _generatePosterDummy,
-                icon: _generatingPoster
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : const Icon(Icons.auto_awesome_rounded),
-                label: _generatingPoster
-                    ? translateText("Generating...")
-                    : translateText("Generate AI Poster"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: brandDark.withOpacity(0.85),
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
-          ],
+    _posterPreview(),
+    const SizedBox(height: 16),
+    Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _pickPoster,
+            icon: const Icon(Icons.photo_library_rounded),
+            label: translateText("Upload Poster"),
+          ),
         ),
-      ]);
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _generatingPoster ? null : _generatePosterDummy,
+            icon: _generatingPoster
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.auto_awesome_rounded),
+            label: _generatingPoster
+                ? translateText("Generating...")
+                : translateText("Generate AI Poster"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: brandDark.withOpacity(0.85),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ),
+      ],
+    ),
+  ]);
 
   Widget _reviewCard() => _cardWrapper("Review & Confirm ✅", [
-        ListTile(
-          leading: const Icon(Icons.campaign_rounded, color: brandMid),
-          title: Text(
-            _titleController.text.isEmpty
-                ? "Untitled Campaign"
-                : _titleController.text,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-          subtitle: Text(
-            _offerController.text.isEmpty
-                ? "No offer description"
-                : _offerController.text,
-          ),
-        ),
-        const SizedBox(height: 10),
-        translateText("Radius: ${_radiusKm.toStringAsFixed(1)} km"),
-        const SizedBox(height: 4),
-        translateText(
-          "Schedule: ${DateFormat.yMMMd().add_jm().format(_combinedStart)} → ${DateFormat.yMMMd().add_jm().format(_combinedEnd)}",
-        ),
-        const SizedBox(height: 14),
-        _posterPreview(),
-      ]);
+    ListTile(
+      leading: const Icon(Icons.campaign_rounded, color: brandMid),
+      title: Text(
+        _titleController.text.isEmpty
+            ? "Untitled Campaign"
+            : _titleController.text,
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text(
+        _offerController.text.isEmpty
+            ? "No offer description"
+            : _offerController.text,
+      ),
+    ),
+    const SizedBox(height: 10),
+    translateText("Radius: ${_radiusKm.toStringAsFixed(1)} km"),
+    const SizedBox(height: 4),
+    translateText(
+      "Schedule: ${DateFormat.yMMMd().add_jm().format(_combinedStart)} → ${DateFormat.yMMMd().add_jm().format(_combinedEnd)}",
+    ),
+    const SizedBox(height: 14),
+    _posterPreview(),
+  ]);
 
   Widget _dateTile(
     String label,
@@ -712,4 +716,3 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     );
   }
 }
-

@@ -18,6 +18,27 @@ import 'dart:ui';
 import 'package:pinpoint/screens/community_feed_screen.dart';
 import 'package:pinpoint/screens/create_post_screen.dart';
 
+// void main() {
+//   runApp(const SimpleApp());
+// }
+
+class SimpleApp extends StatelessWidget {
+  const SimpleApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Shops Page Demo',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6A00F8)),
+      ),
+      home: const ShopsListScreen(),
+    );
+  }
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
