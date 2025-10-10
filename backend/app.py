@@ -51,14 +51,18 @@ app.register_blueprint(shop_bp, url_prefix="/shops")
 app.register_blueprint(geofence_bp, url_prefix="/api/geofence")
 app.register_blueprint(device_bp, url_prefix="/device")
 app.register_blueprint(product_bp, url_prefix="/products")
-app.register_blueprint(recommend_bp, url_prefix="/api")
+""" app.register_blueprint(recommend_bp, url_prefix="/api") """
 app.register_blueprint(fence_logic, url_prefix="/api/geofence/callback")
 
 def implement_geofence():
     print("🚀 Initializing geofencing setup...")
 
     try:
-        conn = psycopg2.connect(os.getenv("DATABASE_URL"))
+        raw_dsn = os.getenv("DATABASE_URL")
+        if raw_dsn.startswith("postgresql+psycopg2://"):
+            raw_dsn = raw_dsn.replace("postgresql+psycopg2://", "postgresql://")
+
+        conn = psycopg2.connect(raw_dsn)
         cursor = conn.cursor()
         # 1️⃣ Fetch all devices
         cursor.execute("SELECT uid, phone_number FROM devices;")
