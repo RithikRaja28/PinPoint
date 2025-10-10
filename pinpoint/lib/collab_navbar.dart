@@ -9,6 +9,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pinpoint/screens/collab_request_list.dart';
 import 'package:pinpoint/screens/community_feed_screen.dart';
 import 'package:pinpoint/screens/customer_screen.dart';
+import 'package:pinpoint/screens/ai_concierge_screen.dart'; // ✅ Import the new screen
 import 'package:pinpoint/globals.dart';
 import 'package:pinpoint/screens/shops_list_screen.dart';
 import 'package:pinpoint/user_model.dart';
@@ -25,7 +26,7 @@ class _CollabNavBarState extends State<CollabNavBar> {
 
   GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
-  LatLng _initialPosition = const LatLng(28.6139, 77.2090); // default Delhi
+  LatLng _initialPosition = const LatLng(28.6139, 77.2090);
   bool _loadingMap = true;
   List<Map<String, dynamic>> _shops = [];
   bool _shopsLoaded = false;
@@ -61,11 +62,6 @@ class _CollabNavBarState extends State<CollabNavBar> {
       if (permission == LocationPermission.deniedForever) {
         setState(() => _loadingMap = false);
         return;
-      }
-
-      Position? lastPos = await Geolocator.getLastKnownPosition();
-      if (lastPos != null) {
-        _initialPosition = LatLng(lastPos.latitude, lastPos.longitude);
       }
 
       Position pos = await Geolocator.getCurrentPosition(
@@ -156,7 +152,6 @@ class _CollabNavBarState extends State<CollabNavBar> {
     }
   }
 
-  // 🔹 Improved Shop Description Bottom Sheet
   void _showShopDialog(String shopName, Map<String, dynamic> data) {
     showModalBottomSheet(
       context: context,
@@ -393,6 +388,8 @@ class _CollabNavBarState extends State<CollabNavBar> {
       ShopsListScreen(),
       const CommunityFeedScreen(),
       const CustomerPage(),
+      _mapSection(),
+      const AIConciergeScreen(), // ✅ NEW PAGE
     ];
 
     return Scaffold(
@@ -469,7 +466,7 @@ class _CollabNavBarState extends State<CollabNavBar> {
           ),
         ),
       ),
-      body: _selectedIndex == 3 ? _mapSection() : pages[_selectedIndex],
+      body: pages[_selectedIndex],
       bottomNavigationBar: Container(
         margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(

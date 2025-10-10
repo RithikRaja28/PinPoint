@@ -1,39 +1,60 @@
 import os
 import re
-from google import genai
+import json
+import pandas as pd
+from google import genai  # ✅ Google Gemini SDK
 from dotenv import load_dotenv
 
+# ----------------------------------------------------------
+# 🔹 Load environment variables
+# ----------------------------------------------------------
 load_dotenv()
-
-from shop_model import ShopModel
-
-# ✅ Load API Key from .env
 API_KEY = os.getenv("GEMINI_API_KEY")
-if not API_KEY:
-    raise ValueError("❌ GEMINI_API_KEY missing in .env file")
 
-# Initialize Gemini Client
+if not API_KEY:
+    raise ValueError("❌ GEMINI_API_KEY missing in .env file. Please add it.")
+
+# ----------------------------------------------------------
+# 🔹 Initialize Gemini client
+# ----------------------------------------------------------
 client = genai.Client(api_key=API_KEY)
 
+# ----------------------------------------------------------
+# 🔹 CSV path setup
+# ----------------------------------------------------------
+CSV_PATH = os.path.join(os.path.dirname(__file__), "../data/shops.csv")
+
+if not os.path.exists(CSV_PATH):
+    raise FileNotFoundError(f"❌ CSV file not found at: {CSV_PATH}")
+
+# Load the CSV data
+df = pd.read_csv(CSV_PATH)
+
+# Normalize column names
+df.columns = [c.strip().lower() for c in df.columns]
+
+
+# ----------------------------------------------------------
+# 🧠 Gemini extraction function
+# ----------------------------------------------------------
 def extract_amount_and_category(prompt: str):
     """
-    Use Gemini API to extract amount and category from user's prompt.
-    Example: "I have 300 rupees for clothes"
-    → {'amount': 300, 'category': 'clothes'}
+    Use Gemini to extract the user's budget and category from their text.
+    Example prompt: "I have 300 rs to spend on street food"
+    Expected output: { "amount": 300, "category": "street food" }
     """
     try:
         response = client.models.generate_content(
             model="gemini-2.0-flash",
             contents=f"""
-            You are a smart text parser. Extract the spending amount and category from this sentence:
-            '{prompt}'.
-            Return strictly in JSON format like this:
-            {{ "amount": 300, "category": "food" }}
-            If no clear category is found, return null for category.
+            Extract the amount and category from this sentence:
+            '{prompt}'
+            Return strictly in JSON format as:
+            {{ "amount": 300, "category": "street food" }}
+            If amount or category is missing, use null.
             """
         )
 
-        import json
         text = response.text.strip()
         match = re.search(r"\{.*\}", text, re.DOTALL)
         if match:
@@ -42,49 +63,69 @@ def extract_amount_and_category(prompt: str):
         else:
             return None
     except Exception as e:
-        print("⚠️ Error extracting data:", e)
+        print("⚠️ Gemini extraction error:", e)
         return None
 
 
-def generate_sql_query(prompt: str):
+# ----------------------------------------------------------
+# 🔍 Recommend shops from CSV
+# ----------------------------------------------------------
+def recommend_from_csv(prompt: str):
     """
-    Takes user prompt → Extracts amount & category → Returns SQL query.
+    Extract amount/category using Gemini,
+    filter CSV shops where avg_spend ≈ amount ± 50
+    and category matches partially.
     """
-    data = extract_amount_and_category(prompt)
-    if not data or "amount" not in data or not data["amount"]:
-        return "⚠️ Unable to extract valid amount/category."
+    extracted = extract_amount_and_category(prompt)
+    if not extracted:
+        return {"error": "Could not extract valid data from prompt."}
 
-    amount = float(data["amount"])
-    category = data.get("category", "").strip().lower()
+    amount = float(extracted.get("amount", 0) or 0)
+    category = (extracted.get("category") or "").strip().lower()
 
-    lower_bound = amount - 50
-    upper_bound = amount + 50
+    if amount == 0 and not category:
+        return {"error": "No valid amount or category found."}
 
-    # ✅ Build SQL Query for shops within similar avg_spend range and category
-    if category:
-        sql_query = f"""
-        SELECT *
-        FROM shops
-        WHERE category ILIKE '%{category}%'
-        AND avg_spend BETWEEN {lower_bound} AND {upper_bound}
-        ORDER BY ABS(avg_spend - {amount}) ASC
-        LIMIT 10;
-        """
-    else:
-        sql_query = f"""
-        SELECT *
-        FROM shops
-        WHERE avg_spend BETWEEN {lower_bound} AND {upper_bound}
-        ORDER BY ABS(avg_spend - {amount}) ASC
-        LIMIT 10;
-        """
+    # Amount range (±50)
+    lower = amount - 50
+    upper = amount + 50
 
-    return sql_query
+    filtered = df.copy()
+
+    if "avg_spend" in df.columns:
+        filtered = filtered[
+            (filtered["avg_spend"] >= lower) & (filtered["avg_spend"] <= upper)
+        ]
+
+    if category and "category" in df.columns:
+        filtered = filtered[
+            filtered["category"].astype(str).str.lower().str.contains(category, na=False)
+        ]
+
+    # Sort by closeness to entered amount
+    if "avg_spend" in filtered.columns:
+        filtered["diff"] = abs(filtered["avg_spend"] - amount)
+        filtered = filtered.sort_values(by="diff")
+
+    # Pick display columns
+    display_cols = ["id", "name", "category", "avg_spend", "city", "description"]
+    display_cols = [c for c in display_cols if c in filtered.columns]
+
+    if filtered.empty:
+        return {"message": "No matching shops found for this query."}
+
+    # Limit top 10 results
+    results = filtered[display_cols].head(10)
+
+    return results.to_dict(orient="records")
 
 
-# 🔹 Example Usage
+# ----------------------------------------------------------
+# 🧩 Test Run
+# ----------------------------------------------------------
 if __name__ == "__main__":
-    user_prompt = "I have 300 rupees to spend on street food"
-    print("🔹 User Prompt:", user_prompt)
-    print("🔍 Generated SQL Query:\n")
-    print(generate_sql_query(user_prompt))
+    print("🟣 PinPoint Recommendation Engine\n")
+    user_prompt = input("Enter your spending query: ").strip()
+    recommendations = recommend_from_csv(user_prompt)
+    print("\n🔹 Recommendations:\n")
+    print(json.dumps(recommendations, indent=2, ensure_ascii=False))

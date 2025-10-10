@@ -1,5 +1,7 @@
 import os
 import psycopg2
+import requests
+from routes.notify import send_notify
 from flask import Flask, send_from_directory
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -7,11 +9,13 @@ from database import db
 from routes.campaign import campaign_bp
 from routes.poster import poster_bp
 from routes.shop import shop_bp
+from routes.fencinglogic import fence_logic
+from app.routes.geofence import geofence_bp, get_device_connectivity_status, get_device_location, create_geofence_subscription
 from routes.devices import device_bp
 from routes.product import product_bp
 # from routes.fencinglogic import fence_logic
 from app.routes.geofence import geofence_bp, get_device_location, create_geofence_subscription
-
+from app.routes.recommendation_route import recommend_bp
 # Load environment variables
 load_dotenv(".env")
 
@@ -34,10 +38,6 @@ with app.app_context():
     print("✅ Using DB:", app.config["SQLALCHEMY_DATABASE_URI"])
     db.create_all()
 
-
-# ----------------------------------------------------------
-# Serve uploaded images
-# ----------------------------------------------------------
 @app.route("/uploads/<path:filename>")
 def serve_upload(filename):
     full_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
@@ -45,28 +45,21 @@ def serve_upload(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 
-# ----------------------------------------------------------
-# Register blueprints
-# ----------------------------------------------------------
 app.register_blueprint(campaign_bp, url_prefix="/api/campaigns")
 app.register_blueprint(poster_bp, url_prefix="/api")
 app.register_blueprint(shop_bp, url_prefix="/shops")
 app.register_blueprint(geofence_bp, url_prefix="/api/geofence")
 app.register_blueprint(device_bp, url_prefix="/device")
 app.register_blueprint(product_bp, url_prefix="/api/products")
-# app.register_blueprint(fence_logic, url_prefix="/api/geofence/callback")
+app.register_blueprint(recommend_bp, url_prefix="/api")
+app.register_blueprint(fence_logic, url_prefix="/api/geofence/callback")
 
-
-# ----------------------------------------------------------
-# Main logic for geofencing setup
-# ----------------------------------------------------------
 def implement_geofence():
     print("🚀 Initializing geofencing setup...")
 
     try:
         conn = psycopg2.connect(os.getenv("DATABASE_URL"))
         cursor = conn.cursor()
-
         # 1️⃣ Fetch all devices
         cursor.execute("SELECT uid, phone_number FROM devices;")
         devices = cursor.fetchall()
@@ -82,7 +75,7 @@ def implement_geofence():
             try:
                 # 3️⃣ Retrieve location from API
                 print(f"📍 Retrieving location for {phone_number} ...")
-                location = get_device_location(phone_number)
+                location = get_device_location({ "device": {"phoneNumber": phone_number}, "maxAge": 60, })
 
                 if not location or "error" in location:
                     print(f"❌ Failed to get location for {phone_number}: {location}")
@@ -91,17 +84,52 @@ def implement_geofence():
                 # 4️⃣ Parse location fields safely
                 current_lat = float(location.get("latitude", 0))
                 current_lon = float(location.get("longitude", 0))
-                radius = int(location.get("radius", 2000))
+                radius = int(location.get("radius", 1000))
                 last_time = location.get("lastLocationTime", "N/A")
 
+                status_success, status_result=get_device_connectivity_status(phone_number)
+                
                 print(f"📍 Device {phone_number} -> lat: {current_lat}, lon: {current_lon}, radius: {radius}, time: {last_time}")
+                update_query = """
+                    UPDATE devices
+                    SET latitude = %s,
+                        longitude = %s,
+                        c_status=%s
+                    WHERE phone_number = %s;
+                """
+                cursor.execute(update_query, (current_lat, current_lon,status_result["connectivityStatus"], phone_number))
+                conn.commit()
+                print(f"✅ Updated device {phone_number} in DB with latest location.")
 
                 # 5️⃣ Create geofence subscription
                 create_res = create_geofence_subscription(phone_number, current_lat, current_lon, radius)
-                print(f"🛰 Geofence created for {phone_number}: {create_res}")
+                print(f"🛰️ Geofence created for {phone_number}: {create_res}")
+
+                #shops descovery logic create functions discover nearby shops so we can use for update geofence also
+                base_url = "http://10.43.38.225:5000/shops//active_campaigns_nearby"
+                params = {
+                    "lat": current_lat,
+                    "lon": current_lon,
+                    "radius": radius
+                }
+
+                try:
+                    response = requests.get(base_url, params=params, timeout=10)
+                    response.raise_for_status()  # Raise error for bad responses (4xx, 5xx)
+                    data = response.json()
+                    for item in data["items"]:
+                        campaign=item["campaign"]
+                        poster_path=os.getenv("ENDPOINT")+"/"+campaign["poster_path"]
+                        campaign_title=campaign["campaign_title"]
+                        send_notify(phone_number,campaign_title,poster_path)
+            
+                except requests.exceptions.RequestException as e:
+                    print("❌ Error calling API:", e)
+                    return None
+                #once shops discovered, iterate shops, find campains for that shop, invoke pushnotification to that user device using the FCM code
 
             except Exception as inner_e:
-                print(f"⚠ Error processing {phone_number}: {inner_e}")
+                print(f"⚠️ Error processing {phone_number}: {inner_e}")
 
         cursor.close()
         conn.close()
@@ -110,18 +138,14 @@ def implement_geofence():
     except Exception as outer_e:
         print(f"❌ Error connecting to database or initializing geofence: {outer_e}")
 
-
-# ----------------------------------------------------------
-# Run Flask app
-# ----------------------------------------------------------
 if __name__ == "__main__":
     debug_mode = os.getenv("FLASK_DEBUG", "False").lower() in ("1", "true", "yes")
     host = os.getenv("FLASK_HOST", "0.0.0.0")
     port = int(os.getenv("FLASK_PORT", "5000"))
 
-    # ⚙ Run geofence setup before app starts
-    # with app.app_context():
-    #     implement_geofence()
+ 
+    with app.app_context():
+        implement_geofence()
 
     app.run(host=host, port=port, debug=debug_mode)
 
