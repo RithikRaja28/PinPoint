@@ -11,6 +11,7 @@ import 'package:pinpoint/screens/community_feed_screen.dart';
 import 'package:pinpoint/screens/customer_screen.dart';
 import 'package:pinpoint/screens/ai_concierge_screen.dart'; // ✅ Import the new screen
 import 'package:pinpoint/globals.dart';
+import 'package:pinpoint/screens/location_simulator_screen.dart';
 import 'package:pinpoint/screens/shops_list_screen.dart';
 import 'package:pinpoint/user_model.dart';
 
@@ -339,7 +340,7 @@ class _CollabNavBarState extends State<CollabNavBar> {
                             const SizedBox(height: 4),
                             Text(
                               "City: ${shop['city']}, Phone: ${shop['phone']}",
-                              style: const TextStyle(color: Colors.grey),
+                              style: const TextStyle(color: Colors.grey)
                             ),
                           ],
                         ),
@@ -427,6 +428,26 @@ class _CollabNavBarState extends State<CollabNavBar> {
                   ),
                   Row(
                     children: [
+                      // 🌍 Simulator Icon (newly added)
+                      IconButton(
+                        tooltip: "Location Simulator",
+                        icon: const Icon(
+                          Icons.location_searching,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const LocationSimulatorScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 6),
+
+                      // 👤 User Avatar
                       if (user != null)
                         GestureDetector(
                           onTap: () => setState(() => _selectedIndex = 2),
@@ -444,7 +465,10 @@ class _CollabNavBarState extends State<CollabNavBar> {
                             ),
                           ),
                         ),
+
                       const SizedBox(width: 10),
+
+                      // 🚪 Logout Icon
                       IconButton(
                         tooltip: "Logout",
                         icon: const Icon(Icons.logout, color: Colors.white),

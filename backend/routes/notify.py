@@ -173,5 +173,5 @@ def send_notify(phone_no, title, imageurl):
         print(f"❌ Error sending notification: {e}")
         return {"success": False, "error": str(e)}
     
-print(send_notify("9952276785","summa testing","https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT3QoyVTa--eV6H-M4LSRKB0GtjHLtjcq2e549K0tKh4OT3POyiMySQ-BQ&s"))
+print(send_notify("9952276785","ICM 2025 is happening !!","https://pbs.twimg.com/ext_tw_video_thumb/1975411836246765568/pu/img/3CWf0xlrKWc6T3tt.jpg"))
 
