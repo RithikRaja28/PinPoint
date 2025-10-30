@@ -150,7 +150,7 @@ def send_notify(phone_no, title, imageurl):
         #     return {"success": False, "error": "Token not found"}
 
         # fcm_token = doc.to_dict().get("token")
-        fcm_token="e9rsqNEqRn-LfZuiQfL-uN:APA91bFJwL-B15Na1rlp05of14dmfQdrialW2NDecoXB-UXB342bPI-GgyGTrdZGR5fyD92A1pcL614_MC8PWhfq99lp7kF_-T2qJe9PYuUPagCM0hPrldk"
+        fcm_token="fhJdUOLiRtempczfean9PH:APA91bHNnklQF1sqiP2roGF6NaOmuUH5OgoKwAh44okiGvXe_p35Cc9CMuCYfvb3Vjf3UOZ2Iv_SElGhBEoKcjsHkqqpQSa4h-4daBz4K2iVygxpVwaMRWE"
 
         if not fcm_token:
             print(f"⚠️ Document found but token field is missing for {phone_no}")
@@ -173,5 +173,6 @@ def send_notify(phone_no, title, imageurl):
         print(f"❌ Error sending notification: {e}")
         return {"success": False, "error": str(e)}
     
-print(send_notify("9952276785","ICM 2025 is happening !!","https://pbs.twimg.com/ext_tw_video_thumb/1975411836246765568/pu/img/3CWf0xlrKWc6T3tt.jpg"))
+print(send_notify("9986913189","Network as code is available to developers !!","https://www.nokia.com/sites/default/files/2024-09/main-video-thumbnail.png?height=510&width=907"))
+print(send_notify("9986913189","IMC 2025 is happening !!","https://pbs.twimg.com/ext_tw_video_thumb/1975411836246765568/pu/img/3CWf0xlrKWc6T3tt.jpg"))
 
