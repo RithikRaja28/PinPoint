@@ -42,7 +42,7 @@ CODE_FENCE_RE = re.compile(r"^```(?:html\s*)?\n?|```$", flags=re.MULTILINE)
 """
 # === Configuration: set these via environment or edit here ===
 # Recommended: export IBM_API_KEY, HOSTNAME, TENANT_ID in your environment.
-IBM_API_KEY = os.environ.get("IBM_API_KEY","v1pmmtgXLZAvG22sDW9sqZBqPlojj4VzAlRbk8oHk41l")  # required
+IBM_API_KEY = os.environ.get("IBM_API_KEY","ixLavDMeyUMAt4fumjPZgZ7DAMUUEX1AayVfePMYcaD9")  # required
 HOSTNAME = os.environ.get("HOSTNAME", "api.jp-tok.watson-orchestrate.cloud.ibm.com")  # e.g. "us-south.orchestrate.cloud.ibm.com"
 TENANT_ID = os.environ.get("TENANT_ID", "0d536afc-582d-49bb-a1d2-44cbfed2f954")  # e.g. "abcd1234"
 AGENT_ID = os.environ.get("AGENT_ID", "88e7c48e-6d25-4e6c-894e-3093b862360f")

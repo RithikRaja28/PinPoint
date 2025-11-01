@@ -166,10 +166,9 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Navigate after 2 seconds
     Timer(const Duration(seconds: 2), () {
-      Navigator.pushReplacementNamed(context, "/root");
+      Navigator.pushReplacementNamed(context, "/create_campaign");
     });
   }
-
   @override
   void dispose() {
     _controller.dispose();

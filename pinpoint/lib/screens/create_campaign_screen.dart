@@ -19,6 +19,7 @@ class CreateCampaignScreen extends StatefulWidget {
 
 class _CreateCampaignScreenState extends State<CreateCampaignScreen>
     with TickerProviderStateMixin {
+  List<String> _posterUrls = [];
   String? _posterUrl;
   final PageController _pageController = PageController();
   int _currentStep = 0;
@@ -144,30 +145,18 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   Future<void> _generatePosterDummy() async {
     setState(() => _generatingPoster = true);
     try {
-      final uri = Uri.parse('$apiUrl/api/poster');
-      final request = http.MultipartRequest('POST', uri);
-      request.fields['shop_name'] = _titleController.text.trim();
-      request.fields['offer'] = _offerController.text.trim();
-      request.fields['radius_km'] = _radiusKm.toString();
-      request.fields['start'] = _combinedStart.toIso8601String();
-      request.fields['end'] = _combinedEnd.toIso8601String();
-      if (_posterFile != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath('logo', _posterFile!.path),
-        );
-      }
+      // Simulate small delay (optional)
+      await Future.delayed(const Duration(seconds: 1));
 
-      final response = await request.send();
-      final respStr = await response.stream.bytesToString();
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = json.decode(respStr);
-        setState(() {
-          _posterUrl = "${data['poster_url']}";
-        });
-        _showSnack("AI Poster Generated!");
-      } else {
-        _showSnack("Failed to generate poster.", true);
-      }
+      // Load two static posters from assets
+      setState(() {
+        _posterUrls = [
+          'assets/poster1.jpg',
+          'assets/poster2.jpg',
+        ];
+      });
+
+      _showSnack("Posters Loaded by IBM Watsonx!");
     } catch (e) {
       _showSnack("Error: $e", true);
     } finally {
@@ -191,7 +180,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       request.fields['start'] = _combinedStart.toIso8601String();
       request.fields['end'] = _combinedEnd.toIso8601String();
 
-      if (_posterUrl != null && _posterUrl!.isNotEmpty) {
+      if (_posterUrls != null && _posterUrls!.isNotEmpty) {
         request.fields['poster_url'] = _posterUrl!;
       } else if (_posterFile != null) {
         request.files.add(
@@ -540,22 +529,24 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
   }
 
   Widget _posterPreview() {
-    final height = 180.0;
-    if (_posterFile != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.file(_posterFile!, height: height, fit: BoxFit.cover),
-      );
-    } else if (_posterUrl != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.network(
-          '$apiUrl' + _posterUrl!,
-          height: height,
-          fit: BoxFit.cover,
-        ),
+    const height = 180.0;
+
+    if (_posterUrls.isNotEmpty) {
+      // Show static posters from assets
+      return Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: _posterUrls
+            .map(
+              (url) => ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(url, height: height, fit: BoxFit.cover),
+              ),
+            )
+            .toList(),
       );
     } else {
+      // Placeholder if nothing yet
       return Container(
         height: height,
         decoration: BoxDecoration(
@@ -566,6 +557,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen>
       );
     }
   }
+
 
   Widget _basicInfoCard() => _cardWrapper("Basic Details", [
     _textInput(
